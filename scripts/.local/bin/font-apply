@@ -1,12 +1,44 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # font-apply — Tek Tıkla Sistem (GTK), Bar, Menü ve Terminal Font Değiştirici
-# Kullanım: font-apply "<UI Font>" "<Mono Font>"
+# Kullanım:
+#   font-apply "<UI Font>" "<Mono Font>"
+#   font-apply --ui "<UI Font>"
+#   font-apply --mono "<Mono Font>"
 # ==============================================================================
 set -euo pipefail
 
-UI_FONT="${1:-Inter}"
-MONO_FONT="${2:-JetBrainsMono Nerd Font}"
+STATE_DIR="$HOME/.local/state/my-theme"
+STATE_FILE="$STATE_DIR/fonts.env"
+mkdir -p "$STATE_DIR"
+
+UI_FONT="Inter"
+MONO_FONT="JetBrainsMono Nerd Font"
+
+if [[ -f "$STATE_FILE" ]]; then
+    # shellcheck disable=SC1090
+    source "$STATE_FILE"
+fi
+
+case "${1:-}" in
+    --ui)
+        UI_FONT="${2:?Arayüz fontu belirtilmeli}"
+        ;;
+    --mono)
+        MONO_FONT="${2:?Terminal/kod fontu belirtilmeli}"
+        ;;
+    "")
+        ;;
+    *)
+        UI_FONT="${1:-$UI_FONT}"
+        MONO_FONT="${2:-$MONO_FONT}"
+        ;;
+esac
+
+cat > "$STATE_FILE" <<EOF
+UI_FONT="${UI_FONT}"
+MONO_FONT="${MONO_FONT}"
+EOF
 
 write_clean() {
     local target="$1"

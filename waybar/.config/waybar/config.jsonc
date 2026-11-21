@@ -15,12 +15,14 @@
     ],
     "modules-right": [
         "tray",
+        "custom/nightlight",
         "custom/theme",
         "network",
         "bluetooth",
         "pulseaudio",
         "battery",
-        "custom/notification"
+        "custom/notification",
+        "custom/power"
     ],
 
     "hyprland/workspaces": {
@@ -45,6 +47,18 @@
     "tray": {
         "icon-size": 15,
         "spacing": 8
+    },
+
+    "custom/nightlight": {
+        "return-type": "json",
+        "exec": "~/.local/bin/night-light status",
+        "interval": 60,
+        "signal": 8,
+        "on-click": "~/.local/bin/night-light toggle",
+        "on-click-right": "~/.local/bin/night-light off",
+        "on-click-middle": "~/.local/bin/night-light auto",
+        "on-scroll-up": "~/.local/bin/night-light cooler",
+        "on-scroll-down": "~/.local/bin/night-light warmer"
     },
 
     "custom/theme": {
@@ -108,5 +122,11 @@
         "on-click": "swaync-client -t -sw",
         "on-click-right": "swaync-client -d -sw",
         "escape": true
+    },
+
+    "custom/power": {
+        "format": "⏻",
+        "tooltip-format": "Güç Menüsü (Super+Shift+Esc)",
+        "on-click": "~/.local/bin/power-menu"
     }
 }

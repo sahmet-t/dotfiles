@@ -10,6 +10,83 @@ PICTURES_DIR="${PICTURES_DIR:-$HOME/Pictures}"
 WALLPAPERS_DIR="$PICTURES_DIR/Wallpapers"
 mkdir -p "$THEMES_DIR" "$WALLPAPERS_DIR"
 
+detect_maple_font() {
+    fc-list : family 2>/dev/null | tr ',' '\n' | sed 's/^ *//;s/ *$//' \
+        | grep -E '^Maple Mono( NF| Nerd Font)?$' | head -n 1 || true
+}
+
+font_menu() {
+    local maple
+    maple="$(detect_maple_font)"
+
+    local mode
+    mode=$(printf "%s\n" \
+        "✨  Hazır Font Çiftleri (Arayüz + Terminal)" \
+        "🖥️  Sadece Arayüz (UI) Fontu Seç" \
+        "⌨️  Sadece Terminal / Kod (Mono) Fontu Seç" \
+        | rofi -dmenu -i -p "Font Ayarları") || return 0
+
+    case "$mode" in
+        *"Hazır Font Çiftleri"*)
+            local pairs=(
+                "Inter  +  JetBrainsMono Nerd Font (Varsayılan · Dengeli)"
+                "IBM Plex Sans  +  GeistMono Nerd Font (Modern · Minimal)"
+                "Fira Sans  +  CaskaydiaCove Nerd Font (Sıcak · Yumuşak)"
+                "Adwaita Sans  +  IosevkaTerm Nerd Font (Sade · Kompakt)"
+                "Open Sans  +  MesloLGM Nerd Font (Ferah · Klasik)"
+                "Noto Sans  +  FantasqueSansM Nerd Font (Karakterli)"
+            )
+            if [[ -n "$maple" ]]; then
+                pairs=("IBM Plex Sans  +  ${maple} (Sıcak · Yuvarlak)" "${pairs[@]}")
+            fi
+
+            local pair_choice
+            pair_choice=$(printf '%s\n' "${pairs[@]}" | rofi -dmenu -i -p "Font Çifti") || return 0
+
+            case "$pair_choice" in
+                "IBM Plex Sans  +  Maple"*)     "$HOME/.local/bin/font-apply" "IBM Plex Sans" "$maple" ;;
+                "Inter  +  JetBrainsMono"*)     "$HOME/.local/bin/font-apply" "Inter" "JetBrainsMono Nerd Font" ;;
+                "IBM Plex Sans  +  GeistMono"*) "$HOME/.local/bin/font-apply" "IBM Plex Sans" "GeistMono Nerd Font" ;;
+                "Fira Sans  +  CaskaydiaCove"*) "$HOME/.local/bin/font-apply" "Fira Sans" "CaskaydiaCove Nerd Font" ;;
+                "Adwaita Sans  +  Iosevka"*)    "$HOME/.local/bin/font-apply" "Adwaita Sans" "IosevkaTerm Nerd Font" ;;
+                "Open Sans  +  Meslo"*)         "$HOME/.local/bin/font-apply" "Open Sans" "MesloLGM Nerd Font" ;;
+                "Noto Sans  +  Fantasque"*)     "$HOME/.local/bin/font-apply" "Noto Sans" "FantasqueSansM Nerd Font" ;;
+            esac
+            ;;
+
+        *"Arayüz (UI)"*)
+            local ui_choice
+            ui_choice=$(printf "%s\n" \
+                "Inter" \
+                "IBM Plex Sans" \
+                "Fira Sans" \
+                "Adwaita Sans" \
+                "Open Sans" \
+                "Noto Sans" \
+                | rofi -dmenu -i -p "Arayüz Fontu") || return 0
+            [[ -n "$ui_choice" ]] && "$HOME/.local/bin/font-apply" --ui "$ui_choice"
+            ;;
+
+        *"Terminal / Kod"*)
+            local monos=(
+                "JetBrainsMono Nerd Font"
+                "GeistMono Nerd Font"
+                "CaskaydiaCove Nerd Font"
+                "IosevkaTerm Nerd Font"
+                "MesloLGM Nerd Font"
+                "FantasqueSansM Nerd Font"
+            )
+            if [[ -n "$maple" ]]; then
+                monos=("$maple" "${monos[@]}")
+            fi
+
+            local mono_choice
+            mono_choice=$(printf '%s\n' "${monos[@]}" | rofi -dmenu -i -p "Terminal Fontu") || return 0
+            [[ -n "$mono_choice" ]] && "$HOME/.local/bin/font-apply" --mono "$mono_choice"
+            ;;
+    esac
+}
+
 choice=$(printf "%s\n" \
     "🎨  Küratörlü Tema Seç" \
     "🖼️  Duvar Kağıdı Seç (Otomatik Renk - Matugen)" \
@@ -35,15 +112,7 @@ case "$choice" in
         ;;
 
     *"Yazı Fontu Değiştir"*)
-        font_choice=$(printf "%s\n" \
-            "Inter  +  JetBrainsMono Nerd Font (Varsayılan)" \
-            "Noto Sans  +  JetBrainsMono Nerd Font" \
-            | rofi -dmenu -i -p "Font Çifti") || exit 0
-
-        case "$font_choice" in
-            "Inter  +  JetBrainsMono"*) "$HOME/.local/bin/font-apply" "Inter" "JetBrainsMono Nerd Font" ;;
-            "Noto Sans  +  JetBrains"*) "$HOME/.local/bin/font-apply" "Noto Sans" "JetBrainsMono Nerd Font" ;;
-        esac
+        font_menu
         ;;
 
     *"Yeni Tema Klasörü Oluştur"*)

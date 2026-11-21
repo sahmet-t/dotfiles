@@ -110,6 +110,7 @@ hl.config({
         disable_splash_rendering = true,
         background_color = colors.bg,
         focus_on_activate = true,
+        vrr = 2,
     },
 
     debug = {

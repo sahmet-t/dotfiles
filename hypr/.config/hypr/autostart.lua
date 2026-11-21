@@ -14,8 +14,9 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("waybar")
     hl.exec_cmd("swaync")
 
-    -- Kilit & Uyku Yönetimi
+    -- Kilit, Uyku & Gece Işığı (Mavi Işık Filtresi)
     hl.exec_cmd("hypridle")
+    hl.exec_cmd("hyprsunset")
 
     -- Pano Geçmişi (Metin ve görsel)
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
