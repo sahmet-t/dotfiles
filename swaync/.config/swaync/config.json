@@ -1,0 +1,28 @@
+{
+    "positionX": "right",
+    "positionY": "top",
+    "control-center-margin-top": 10,
+    "control-center-margin-bottom": 10,
+    "control-center-margin-right": 10,
+    "control-center-width": 380,
+    "notification-window-width": 360,
+    "timeout": 5,
+    "timeout-low": 3,
+    "timeout-critical": 0,
+    "fit-to-screen": true,
+    "widgets": [
+        "title",
+        "dnd",
+        "notifications"
+    ],
+    "widget-config": {
+        "title": {
+            "text": "Bildirimler",
+            "clear-all-button": true,
+            "button-text": "Temizle"
+        },
+        "dnd": {
+            "text": "Rahatsız Etme"
+        }
+    }
+}

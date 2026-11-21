@@ -1,0 +1,4 @@
+# GTK/Nautilus gibi uygulamaların Stow dizinine yazabileceği çalışma zamanı dosyaları
+gtk/.config/gtk-3.0/bookmarks
+gtk/.config/gtk-3.0/settings.ini
+gtk/.config/gtk-4.0/settings.ini

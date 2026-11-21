@@ -1,0 +1,9 @@
+/* Varsayılan Tema: Everforest Dark (theme-apply / matugen ile güncellenir) */
+@define-color bg #2d353b;
+@define-color bg_alt #343f44;
+@define-color surface #3d484d;
+@define-color fg #d3c6aa;
+@define-color fg_muted #859289;
+@define-color accent #a7c080;
+@define-color accent_alt #83c092;
+@define-color urgent #e67e80;

@@ -1,0 +1,64 @@
+@import "colors.css";
+@import "font.css";
+
+* {
+    border: none;
+    border-radius: 10px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: transparent;
+    color: @fg;
+}
+
+.modules-left,
+.modules-center,
+.modules-right {
+    background: alpha(@bg, 0.88);
+    border: 1px solid alpha(@surface, 0.9);
+    border-radius: 12px;
+    padding: 2px 8px;
+}
+
+#workspaces button {
+    padding: 0 7px;
+    color: @fg_muted;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+#workspaces button.active {
+    color: @accent;
+    background: alpha(@surface, 0.65);
+}
+
+#workspaces button:hover {
+    color: @fg;
+    background: alpha(@surface, 0.45);
+}
+
+#clock,
+#tray,
+#custom-theme,
+#network,
+#bluetooth,
+#pulseaudio,
+#battery,
+#custom-notification {
+    padding: 0 8px;
+    color: @fg;
+}
+
+#custom-theme {
+    color: @accent;
+    font-size: 15px;
+}
+
+#battery.warning {
+    color: @accent_alt;
+}
+
+#battery.critical {
+    color: @urgent;
+}

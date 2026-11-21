@@ -1,0 +1,10 @@
+/* Varsayılan Tema: Everforest Dark */
+* {
+    bg: #2d353be6;
+    bg-alt: #343f44ff;
+    surface: #3d484dff;
+    fg: #d3c6aaff;
+    fg-muted: #859289ff;
+    accent: #a7c080ff;
+    urgent: #e67e80ff;
+}

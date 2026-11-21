@@ -1,0 +1,12 @@
+-- Matugen tarafından otomatik üretildi (Hyprland 0.57+ Lua)
+return {
+    bg = "rgb({{ colors.background.default.hex_stripped }})",
+    bg_alt = "rgb({{ colors.surface_container.default.hex_stripped }})",
+    surface = "rgb({{ colors.surface_container_high.default.hex_stripped }})",
+    fg = "rgb({{ colors.on_surface.default.hex_stripped }})",
+    fg_muted = "rgb({{ colors.on_surface_variant.default.hex_stripped }})",
+    accent = "rgb({{ colors.primary.default.hex_stripped }})",
+    accent_alt = "rgb({{ colors.tertiary.default.hex_stripped }})",
+    urgent = "rgb({{ colors.error.default.hex_stripped }})",
+    border_inactive = "rgba({{ colors.outline_variant.default.hex_stripped }}aa)",
+}

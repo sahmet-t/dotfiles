@@ -1,0 +1,11 @@
+configuration {
+    modi: "drun,run,window";
+    show-icons: true;
+    icon-theme: "Adwaita";
+    display-drun: "Ara";
+    drun-display-format: "{name}";
+    location: 0;
+    disable-history: false;
+}
+
+@theme "~/.config/rofi/theme.rasi"

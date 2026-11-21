@@ -1,0 +1,67 @@
+@import "colors.rasi"
+@import "font.rasi"
+
+* {
+    background-color: transparent;
+    text-color: @fg;
+}
+
+window {
+    width: 520px;
+    border: 2px solid;
+    border-color: @accent;
+    border-radius: 14px;
+    background-color: @bg;
+    padding: 16px;
+}
+
+mainbox {
+    spacing: 12px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    padding: 10px 14px;
+    border-radius: 10px;
+    background-color: @bg-alt;
+    spacing: 10px;
+    children: [ prompt, entry ];
+}
+
+prompt {
+    text-color: @accent;
+}
+
+entry {
+    placeholder: "Uygulama veya komut yaz...";
+    placeholder-color: @fg-muted;
+}
+
+listview {
+    lines: 7;
+    columns: 1;
+    fixed-height: false;
+    spacing: 6px;
+    scrollbar: false;
+}
+
+element {
+    padding: 9px 12px;
+    border-radius: 10px;
+    spacing: 10px;
+}
+
+element selected.normal {
+    background-color: @surface;
+    text-color: @accent;
+}
+
+element-text {
+    text-color: inherit;
+    vertical-align: 0.5;
+}
+
+element-icon {
+    size: 22px;
+    background-color: transparent;
+}

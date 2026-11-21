@@ -1,0 +1,222 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# theme-apply — Hibrit Tema Motoru (Küratörlü Paletler + Matugen Dinamik Renkler)
+# Kullanım:
+#   theme-apply --preset <tema_klasor_adi>
+#   theme-apply --wallpaper <gorsel_yolu>
+# ==============================================================================
+set -euo pipefail
+
+THEMES_DIR="$HOME/.local/share/my-themes"
+STATE_DIR="$HOME/.local/state/my-theme"
+mkdir -p "$STATE_DIR"
+
+strip_hash() {
+    echo "${1#\#}"
+}
+
+write_clean() {
+    local target="$1"
+    mkdir -p "$(dirname "$target")"
+    if [[ -L "$target" && ! -e "$target" ]]; then
+        rm -f "$target"
+    fi
+    cat > "$target"
+}
+
+reload_apps() {
+    hyprctl reload >/dev/null 2>&1 || true
+    pkill -SIGUSR2 waybar >/dev/null 2>&1 || true
+    swaync-client -rs >/dev/null 2>&1 || true
+    pkill -SIGUSR2 ghostty >/dev/null 2>&1 || true
+}
+
+apply_preset() {
+    local name="$1"
+    local theme_dir="$THEMES_DIR/$name"
+    local palette="$theme_dir/palette.env"
+
+    if [[ ! -f "$palette" ]]; then
+        notify-send "Tema Motoru" "Palet bulunamadı: $name" -u critical || true
+        exit 1
+    fi
+
+    # shellcheck disable=SC1090
+    source "$palette"
+
+    local bg_s bg_alt_s surf_s fg_s fg_m_s acc_s acc_alt_s urg_s brd_s
+    bg_s=$(strip_hash "$BG")
+    bg_alt_s=$(strip_hash "$BG_ALT")
+    surf_s=$(strip_hash "$SURFACE")
+    fg_s=$(strip_hash "$FG")
+    fg_m_s=$(strip_hash "$FG_MUTED")
+    acc_s=$(strip_hash "$ACCENT")
+    acc_alt_s=$(strip_hash "$ACCENT_ALT")
+    urg_s=$(strip_hash "$URGENT")
+    brd_s=$(strip_hash "$BORDER_INACTIVE")
+
+    # 1a. Hyprland (0.57+ Lua)
+    write_clean "$HOME/.config/hypr/colors.lua" <<EOF
+-- Tema: ${THEME_NAME}
+return {
+    bg = "rgb(${bg_s})",
+    bg_alt = "rgb(${bg_alt_s})",
+    surface = "rgb(${surf_s})",
+    fg = "rgb(${fg_s})",
+    fg_muted = "rgb(${fg_m_s})",
+    accent = "rgb(${acc_s})",
+    accent_alt = "rgb(${acc_alt_s})",
+    urgent = "rgb(${urg_s})",
+    border_inactive = "rgba(${brd_s}aa)",
+}
+EOF
+
+    # 1b. Hyprlock (Hyprlang .conf)
+    write_clean "$HOME/.config/hypr/colors.conf" <<EOF
+# Tema: ${THEME_NAME}
+\$bg = rgb(${bg_s})
+\$bg_alt = rgb(${bg_alt_s})
+\$surface = rgb(${surf_s})
+\$fg = rgb(${fg_s})
+\$fg_muted = rgb(${fg_m_s})
+\$accent = rgb(${acc_s})
+\$accent_alt = rgb(${acc_alt_s})
+\$urgent = rgb(${urg_s})
+\$border_inactive = rgba(${brd_s}aa)
+EOF
+
+    # 2. Waybar
+    write_clean "$HOME/.config/waybar/colors.css" <<EOF
+/* Tema: ${THEME_NAME} */
+@define-color bg ${BG};
+@define-color bg_alt ${BG_ALT};
+@define-color surface ${SURFACE};
+@define-color fg ${FG};
+@define-color fg_muted ${FG_MUTED};
+@define-color accent ${ACCENT};
+@define-color accent_alt ${ACCENT_ALT};
+@define-color urgent ${URGENT};
+EOF
+
+    # 3. Rofi
+    write_clean "$HOME/.config/rofi/colors.rasi" <<EOF
+/* Tema: ${THEME_NAME} */
+* {
+    bg: ${BG}e6;
+    bg-alt: ${BG_ALT}ff;
+    surface: ${SURFACE}ff;
+    fg: ${FG}ff;
+    fg-muted: ${FG_MUTED}ff;
+    accent: ${ACCENT}ff;
+    urgent: ${URGENT}ff;
+}
+EOF
+
+    # 4. SwayNC
+    write_clean "$HOME/.config/swaync/colors.css" <<EOF
+/* Tema: ${THEME_NAME} */
+@define-color bg ${BG};
+@define-color bg_alt ${BG_ALT};
+@define-color surface ${SURFACE};
+@define-color fg ${FG};
+@define-color fg_muted ${FG_MUTED};
+@define-color accent ${ACCENT};
+@define-color urgent ${URGENT};
+EOF
+
+    # 5. Ghostty
+    write_clean "$HOME/.config/ghostty/theme" <<EOF
+# Tema: ${THEME_NAME}
+background = ${BG}
+foreground = ${FG}
+cursor-color = ${ACCENT}
+selection-background = ${SURFACE}
+selection-foreground = ${FG}
+palette = 0=${TERM_0}
+palette = 1=${TERM_1}
+palette = 2=${TERM_2}
+palette = 3=${TERM_3}
+palette = 4=${TERM_4}
+palette = 5=${TERM_5}
+palette = 6=${TERM_6}
+palette = 7=${TERM_7}
+palette = 8=${TERM_8}
+palette = 9=${TERM_1}
+palette = 10=${TERM_2}
+palette = 11=${TERM_3}
+palette = 12=${TERM_4}
+palette = 13=${TERM_5}
+palette = 14=${TERM_6}
+palette = 15=${TERM_15}
+EOF
+
+    # 6. GTK3 & GTK4 (Nautilus, pwvucontrol, Overskride)
+    local gtk_css
+    gtk_css=$(cat <<EOF
+/* Tema: ${THEME_NAME} */
+@define-color accent_color ${ACCENT};
+@define-color accent_bg_color ${ACCENT};
+@define-color accent_fg_color ${ACCENT_FG};
+@define-color window_bg_color ${BG};
+@define-color window_fg_color ${FG};
+@define-color view_bg_color ${BG_ALT};
+@define-color view_fg_color ${FG};
+@define-color headerbar_bg_color ${BG};
+@define-color headerbar_fg_color ${FG};
+@define-color card_bg_color ${BG_ALT};
+@define-color card_fg_color ${FG};
+@define-color popover_bg_color ${BG_ALT};
+@define-color popover_fg_color ${FG};
+@define-color dialog_bg_color ${BG};
+@define-color dialog_fg_color ${FG};
+@define-color sidebar_bg_color ${SIDEBAR};
+@define-color sidebar_fg_color ${FG};
+EOF
+)
+    printf '%s\n' "$gtk_css" | write_clean "$HOME/.config/gtk-3.0/colors.css"
+    printf '%s\n' "$gtk_css" | write_clean "$HOME/.config/gtk-4.0/colors.css"
+
+    # Tema klasöründe duvar kağıdı varsa uygula
+    local wp
+    wp=$(find -L "$theme_dir" -maxdepth 2 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | head -n 1 || true)
+    if [[ -n "$wp" ]] && command -v awww >/dev/null 2>&1; then
+        awww img "$wp" --transition-type grow --transition-duration 0.8 --transition-fps 60 >/dev/null 2>&1 || true
+    fi
+
+    echo "preset:$name" > "$STATE_DIR/current"
+    reload_apps
+    notify-send "Tema Uygulandı" "${THEME_NAME}" || true
+}
+
+apply_wallpaper() {
+    local img="$1"
+    if [[ ! -f "$img" ]]; then
+        notify-send "Tema Motoru" "Duvar kağıdı bulunamadı: $img" -u critical || true
+        exit 1
+    fi
+
+    if command -v awww >/dev/null 2>&1; then
+        awww img "$img" --transition-type grow --transition-duration 0.8 --transition-fps 60 >/dev/null 2>&1 || true
+    fi
+
+    if command -v matugen >/dev/null 2>&1; then
+        matugen image "$img" --source-color-index 0 -m dark || matugen image "$img" -m dark
+    fi
+
+    echo "wallpaper:$img" > "$STATE_DIR/current"
+    reload_apps
+    notify-send "Dinamik Tema Uygulandı" "$(basename "$img")" || true
+}
+
+case "${1:-}" in
+    --preset)
+        apply_preset "${2:?Tema adı belirtilmeli}"
+        ;;
+    --wallpaper)
+        apply_wallpaper "${2:?Görsel yolu belirtilmeli}"
+        ;;
+    *)
+        echo "Kullanım: theme-apply --preset <tema> | --wallpaper <yol>"
+        exit 1
+        ;;
+esac

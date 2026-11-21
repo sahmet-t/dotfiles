@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# theme-menu — Super + Shift + T ile Açılan Ana Özelleştirme Menüsü
+# ==============================================================================
+set -euo pipefail
+
+THEMES_DIR="$HOME/.local/share/my-themes"
+PICTURES_DIR="$(xdg-user-dir PICTURES 2>/dev/null || true)"
+PICTURES_DIR="${PICTURES_DIR:-$HOME/Pictures}"
+WALLPAPERS_DIR="$PICTURES_DIR/Wallpapers"
+mkdir -p "$THEMES_DIR" "$WALLPAPERS_DIR"
+
+choice=$(printf "%s\n" \
+    "🎨  Küratörlü Tema Seç" \
+    "🖼️  Duvar Kağıdı Seç (Otomatik Renk - Matugen)" \
+    "🔤  Yazı Fontu Değiştir" \
+    "✨  Yeni Tema Klasörü Oluştur" \
+    "🌓  Üst Barı Gizle / Göster (Odak Modu)" \
+    | rofi -dmenu -i -p "Görünüm") || exit 0
+
+case "$choice" in
+    *"Küratörlü Tema Seç"*)
+        selected=$(find -L "$THEMES_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | rofi -dmenu -i -p "Tema") || exit 0
+        [[ -n "$selected" ]] && "$HOME/.local/bin/theme-apply" --preset "$selected"
+        ;;
+
+    *"Duvar Kağıdı Seç"*)
+        mapfile -t wallpapers < <(find -L "$WALLPAPERS_DIR" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) -printf '%P\n' | sort)
+        if [[ ${#wallpapers[@]} -eq 0 ]]; then
+            notify-send "Duvar Kağıdı Bulunamadı" "Görselleri şu klasöre koy:\n$WALLPAPERS_DIR" || true
+            exit 0
+        fi
+        selected=$(printf '%s\n' "${wallpapers[@]}" | rofi -dmenu -i -p "Duvar Kağıdı") || exit 0
+        [[ -n "$selected" ]] && "$HOME/.local/bin/theme-apply" --wallpaper "$WALLPAPERS_DIR/$selected"
+        ;;
+
+    *"Yazı Fontu Değiştir"*)
+        font_choice=$(printf "%s\n" \
+            "Inter  +  JetBrainsMono Nerd Font (Varsayılan)" \
+            "Noto Sans  +  JetBrainsMono Nerd Font" \
+            | rofi -dmenu -i -p "Font Çifti") || exit 0
+
+        case "$font_choice" in
+            "Inter  +  JetBrainsMono"*) "$HOME/.local/bin/font-apply" "Inter" "JetBrainsMono Nerd Font" ;;
+            "Noto Sans  +  JetBrains"*) "$HOME/.local/bin/font-apply" "Noto Sans" "JetBrainsMono Nerd Font" ;;
+        esac
+        ;;
+
+    *"Yeni Tema Klasörü Oluştur"*)
+        new_name=$(rofi -dmenu -p "Yeni tema adı (örn: orman-gecesi)" < /dev/null) || exit 0
+        new_name=$(printf '%s' "$new_name" | tr ' ' '-' | tr -cd '[:alnum:]_-')
+        [[ -z "$new_name" ]] && exit 0
+        mkdir -p "$THEMES_DIR/$new_name"
+        cp "$THEMES_DIR/everforest/palette.env" "$THEMES_DIR/$new_name/palette.env"
+        sed -i "s/^THEME_NAME=.*/THEME_NAME=\"$new_name\"/" "$THEMES_DIR/$new_name/palette.env"
+        notify-send "Yeni Tema Oluşturuldu" "Düzenlemek için:\n~/.local/share/my-themes/$new_name/palette.env" || true
+        ;;
+
+    *"Üst Barı Gizle"*)
+        pkill -SIGUSR1 waybar || true
+        ;;
+esac

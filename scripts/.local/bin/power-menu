@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# power-menu — Super + Shift + Escape ile Açılan Güç & Oturum Menüsü
+# ==============================================================================
+set -euo pipefail
+
+confirm() {
+    local ans
+    ans=$(printf "Hayır\nEvet\n" | rofi -dmenu -i -p "$1") || return 1
+    [[ "$ans" == "Evet" ]]
+}
+
+choice=$(printf "%s\n" \
+    "🔒  Ekranı Kilitle" \
+    "🚪  Oturumu Kapat" \
+    "💤  Uyku" \
+    "🔄  Yeniden Başlat" \
+    "⏻   Bilgisayarı Kapat" \
+    | rofi -dmenu -i -p "Güç") || exit 0
+
+case "$choice" in
+    *"Ekranı Kilitle"*)
+        pidof hyprlock || hyprlock
+        ;;
+    *"Oturumu Kapat"*)
+        hyprctl dispatch exit
+        ;;
+    *"Uyku"*)
+        systemctl suspend
+        ;;
+    *"Yeniden Başlat"*)
+        confirm "Yeniden başlatılsın mı?" && systemctl reboot
+        ;;
+    *"Bilgisayarı Kapat"*)
+        confirm "Bilgisayar kapatılsın mı?" && systemctl poweroff
+        ;;
+esac

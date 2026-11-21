@@ -1,0 +1,18 @@
+/* Varsayılan GTK4/Libadwaita Renkleri: Everforest Dark */
+@define-color accent_color #a7c080;
+@define-color accent_bg_color #a7c080;
+@define-color accent_fg_color #2d353b;
+@define-color window_bg_color #2d353b;
+@define-color window_fg_color #d3c6aa;
+@define-color view_bg_color #343f44;
+@define-color view_fg_color #d3c6aa;
+@define-color headerbar_bg_color #2d353b;
+@define-color headerbar_fg_color #d3c6aa;
+@define-color card_bg_color #343f44;
+@define-color card_fg_color #d3c6aa;
+@define-color popover_bg_color #343f44;
+@define-color popover_fg_color #d3c6aa;
+@define-color dialog_bg_color #2d353b;
+@define-color dialog_fg_color #d3c6aa;
+@define-color sidebar_bg_color #272e33;
+@define-color sidebar_fg_color #d3c6aa;

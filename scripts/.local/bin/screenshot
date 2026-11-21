@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# screenshot — XDG uyumlu Bölge (Satty) ve Tam Ekran Ekran Görüntüsü
+# Kullanım: screenshot region | full
+# ==============================================================================
+set -euo pipefail
+
+PICTURES_DIR="$(xdg-user-dir PICTURES 2>/dev/null || true)"
+PICTURES_DIR="${PICTURES_DIR:-$HOME/Pictures}"
+OUT_DIR="$PICTURES_DIR/Screenshots"
+mkdir -p "$OUT_DIR"
+
+case "${1:-}" in
+    region)
+        tmp=$(mktemp --suffix=.png)
+        trap 'rm -f "$tmp"' EXIT
+        hyprshot -m region --raw > "$tmp" || exit 0
+        [[ -s "$tmp" ]] || exit 0
+        satty --filename "$tmp" \
+              --output-filename "$OUT_DIR/$(date +'%Y-%m-%d_%H-%M-%S').png" \
+              --copy-command wl-copy
+        ;;
+    full)
+        hyprshot -m output -m active -o "$OUT_DIR"
+        ;;
+    *)
+        echo "Kullanım: screenshot region | full"
+        exit 1
+        ;;
+esac

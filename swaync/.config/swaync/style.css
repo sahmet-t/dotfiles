@@ -1,0 +1,41 @@
+@import "/etc/xdg/swaync/style.css";
+@import "colors.css";
+@import "font.css";
+
+.control-center {
+    background: alpha(@bg, 0.94);
+    border: 1px solid @surface;
+    border-radius: 14px;
+    color: @fg;
+    padding: 12px;
+}
+
+.notification {
+    background: @bg_alt;
+    border: 1px solid @surface;
+    border-radius: 12px;
+    color: @fg;
+    margin: 6px 0;
+}
+
+.widget-title {
+    color: @accent;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.widget-title > button {
+    background: @surface;
+    color: @fg;
+    border-radius: 8px;
+    padding: 4px 10px;
+}
+
+.widget-dnd > switch {
+    background: @surface;
+    border-radius: 12px;
+}
+
+.widget-dnd > switch:checked {
+    background: @accent;
+}
