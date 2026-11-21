@@ -23,7 +23,7 @@ case "$choice" in
         pidof hyprlock || hyprlock
         ;;
     *"Oturumu Kapat"*)
-        hyprctl dispatch exit
+        hyprctl dispatch 'hl.dsp.exit()'
         ;;
     *"Uyku"*)
         systemctl suspend

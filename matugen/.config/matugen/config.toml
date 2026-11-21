@@ -3,6 +3,8 @@
 # Not: Duvar kağıdını theme-apply doğrudan `awww` ile değiştirir.
 # ==============================================================================
 
+[config]
+
 [templates.hyprland]
 input_path = "~/.config/matugen/templates/hyprland.lua"
 output_path = "~/.config/hypr/colors.lua"

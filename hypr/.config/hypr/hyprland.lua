@@ -87,7 +87,6 @@ hl.config({
     },
 
     dwindle = {
-        pseudotile = true,
         preserve_split = true,
         smart_split = false,
     },
@@ -110,8 +109,11 @@ hl.config({
         disable_hyprland_logo = true,
         disable_splash_rendering = true,
         background_color = colors.bg,
-        vfr = true,
         focus_on_activate = true,
+    },
+
+    debug = {
+        vfr = true,
     },
 })
 
