@@ -1,0 +1,12 @@
+# /etc/scx_loader.toml — HP Omen 17 (Ryzen 7 8845HS)
+# scx_lavd --autopower: aktif sistem güç profiline (balanced / power-saver / performance)
+# göre çekirdek paketleme (core compaction) ve gecikme önceliğini otomatik ayarlar.
+
+default_sched = "scx_lavd"
+default_mode = "Auto"
+
+[scheds.scx_lavd]
+auto_mode = ["--autopower"]
+powersave_mode = ["--powersave"]
+lowlatency_mode = ["--balanced"]
+gaming_mode = ["--performance"]

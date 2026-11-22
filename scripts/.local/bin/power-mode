@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# power-mode — HP Omen (Ryzen 7 8845HS) Güç Profili, Ekran & Waybar Kontrolü
+# Kullanım: power-mode [status|cycle|auto|set <profile>|apply-session <profile>]
+# ==============================================================================
+set -euo pipefail
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/power-mode"
+LOCK_FILE="$STATE_DIR/power-mode.lock"
+
+SIGNAL=9
+SYS_HELPER="/usr/local/bin/power-mode-sys"
+HYPRIDLE_AC="$HOME/.config/hypr/hypridle.conf"
+HYPRIDLE_BAT="$HOME/.config/hypr/hypridle-battery.conf"
+
+is_on_ac() {
+    local online
+    online=$(cat /sys/class/power_supply/ACAD/online 2>/dev/null || echo 1)
+    [[ "$online" == "1" ]]
+}
+
+get_profile() {
+    local prof=""
+    if command -v powerprofilesctl >/dev/null 2>&1; then
+        prof=$(powerprofilesctl get 2>/dev/null || true)
+    fi
+    if [[ -z "$prof" ]]; then
+        case "$(cat /sys/firmware/acpi/platform_profile 2>/dev/null || echo balanced)" in
+            low-power)   prof="power-saver" ;;
+            performance) prof="performance" ;;
+            *)           prof="balanced" ;;
+        esac
+    fi
+    echo "$prof"
+}
+
+get_sched_info() {
+    local state ops
+    state=$(cat /sys/kernel/sched_ext/state 2>/dev/null || echo disabled)
+    if [[ "$state" == "enabled" ]]; then
+        ops=$(cat /sys/kernel/sched_ext/root/ops 2>/dev/null || echo "scx")
+        ops="${ops%%_*}"
+        if [[ "$ops" == scx* ]]; then
+            echo "$ops"
+        else
+            echo "scx_${ops}"
+        fi
+    else
+        echo "BORE (varsayılan)"
+    fi
+}
+
+get_watt_info() {
+    local status uw
+    status=$(cat /sys/class/power_supply/BAT0/status 2>/dev/null || echo "Unknown")
+    uw=$(cat /sys/class/power_supply/BAT0/power_now 2>/dev/null || echo 0)
+    if [[ "$uw" =~ ^[0-9]+$ ]] && (( uw > 0 )); then
+        awk -v uw="$uw" -v st="$status" 'BEGIN {
+            w = uw / 1000000.0;
+            if (st == "Charging") printf "+%.1f W (Şarj)", w;
+            else printf "%.1f W", w;
+        }'
+    else
+        if is_on_ac; then
+            echo "Prizde (Dolu)"
+        else
+            echo "—"
+        fi
+    fi
+}
+
+get_refresh_rate() {
+    local hz=""
+    if command -v hyprctl >/dev/null 2>&1 && [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        hz=$(hyprctl monitors 2>/dev/null | awk '/Monitor eDP-1/{f=1; next} f && /@/{sub(/.*@/, ""); sub(/ .*/, ""); printf "%.0f Hz", $1; exit}' || true)
+    fi
+    if [[ -z "$hz" ]]; then
+        local prof
+        prof=$(get_profile)
+        if [[ "$prof" == "power-saver" ]]; then
+            hz="60 Hz"
+        else
+            hz="240 Hz"
+        fi
+    fi
+    echo "$hz"
+}
+
+notify_waybar() {
+    pkill -RTMIN+"$SIGNAL" waybar >/dev/null 2>&1 || true
+}
+
+switch_hypridle() {
+    local target_cfg="$1"
+    [[ -f "$target_cfg" ]] || return 0
+    if pgrep -af "hypridle" | grep -Fq -- "$target_cfg"; then
+        return 0
+    fi
+    pkill -x hypridle >/dev/null 2>&1 || true
+    sleep 0.1
+    nohup hypridle -c "$target_cfg" >/dev/null 2>&1 &
+    disown || true
+}
+
+apply_hyprland_profile() {
+    local prof="$1"
+    command -v hyprctl >/dev/null 2>&1 || return 0
+
+    if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        local sig_dir
+        sig_dir=$(find "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -n 1 || true)
+        if [[ -n "$sig_dir" ]]; then
+            export HYPRLAND_INSTANCE_SIGNATURE
+            HYPRLAND_INSTANCE_SIGNATURE=$(basename "$sig_dir")
+        else
+            return 0
+        fi
+    fi
+
+    if [[ "$prof" == "power-saver" ]]; then
+        hyprctl eval 'hl.monitor({ output = "eDP-1", mode = "2560x1440@60", position = "0x0", scale = 1.25 }); hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false } }, animations = { enabled = false } })' >/dev/null 2>&1 || {
+            hyprctl keyword monitor "eDP-1,2560x1440@60,0x0,1.25" >/dev/null 2>&1 || true
+            hyprctl keyword decoration:blur:enabled false >/dev/null 2>&1 || true
+            hyprctl keyword decoration:shadow:enabled false >/dev/null 2>&1 || true
+            hyprctl keyword animations:enabled false >/dev/null 2>&1 || true
+        }
+        switch_hypridle "$HYPRIDLE_BAT"
+    else
+        hyprctl eval 'hl.monitor({ output = "eDP-1", mode = "2560x1440@240", position = "0x0", scale = 1.25 }); hl.config({ decoration = { blur = { enabled = true }, shadow = { enabled = true } }, animations = { enabled = true } })' >/dev/null 2>&1 || {
+            hyprctl keyword monitor "eDP-1,2560x1440@240,0x0,1.25" >/dev/null 2>&1 || true
+            hyprctl keyword decoration:blur:enabled true >/dev/null 2>&1 || true
+            hyprctl keyword decoration:shadow:enabled true >/dev/null 2>&1 || true
+            hyprctl keyword animations:enabled true >/dev/null 2>&1 || true
+        }
+        switch_hypridle "$HYPRIDLE_AC"
+    fi
+}
+
+apply_system_profile() {
+    local prof="$1"
+    if [[ -x "$SYS_HELPER" ]] && sudo -n "$SYS_HELPER" "$prof" >/dev/null 2>&1; then
+        return 0
+    fi
+    if command -v powerprofilesctl >/dev/null 2>&1; then
+        powerprofilesctl set "$prof" >/dev/null 2>&1 || true
+    fi
+}
+
+cmd="${1:-status}"
+
+if [[ "$cmd" == "status" ]]; then
+    prof=$(get_profile)
+    watt=$(get_watt_info)
+    sched=$(get_sched_info)
+    boost=$(cat /sys/devices/system/cpu/cpufreq/boost 2>/dev/null || echo "?")
+    epp=$(cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference 2>/dev/null || echo "?")
+    hz=$(get_refresh_rate)
+    if is_on_ac; then
+        src="Priz"
+    else
+        src="Pil"
+    fi
+    if [[ "$boost" == "1" ]]; then
+        boost_txt="Açık"
+    elif [[ "$boost" == "0" ]]; then
+        boost_txt="Kapalı"
+    else
+        boost_txt="$boost"
+    fi
+
+    case "$prof" in
+        power-saver)
+            icon="󰌪"
+            label="Güç Tasarrufu"
+            cls="saver"
+            ;;
+        performance)
+            icon="󰓅"
+            label="Performans"
+            cls="performance"
+            ;;
+        *)
+            icon="󰾅"
+            label="Dengeli"
+            cls="balanced"
+            ;;
+    esac
+
+    tooltip="Güç Profili: ${label} (${src})\\nTüketim: ${watt}\\nZamanlayıcı: ${sched}\\nEkran: ${hz} · Boost: ${boost_txt}\\nEPP: ${epp}\\n\\nSol tık: Profil değiştir · Orta tık: Otomatik AC/Pil"
+    printf '{"text":"%s","tooltip":"%s","class":"%s"}\n' "$icon" "$tooltip" "$cls"
+    exit 0
+fi
+
+mkdir -p "$STATE_DIR"
+exec 9>"$LOCK_FILE"
+flock -w 3 9 || exit 0
+
+case "$cmd" in
+    apply-session)
+        target="${2:-$(get_profile)}"
+        apply_hyprland_profile "$target"
+        ;;
+    set)
+        target="${2:-balanced}"
+        case "$target" in
+            power-saver|balanced|performance) ;;
+            *) echo "Geçersiz profil: $target" >&2; exit 1 ;;
+        esac
+        apply_system_profile "$target"
+        apply_hyprland_profile "$target"
+        ;;
+    cycle)
+        cur=$(get_profile)
+        case "$cur" in
+            power-saver) next="balanced" ;;
+            balanced)    next="performance" ;;
+            *)           next="power-saver" ;;
+        esac
+        apply_system_profile "$next"
+        apply_hyprland_profile "$next"
+        ;;
+    auto)
+        if is_on_ac; then
+            target="balanced"
+        else
+            target="power-saver"
+        fi
+        apply_system_profile "$target"
+        apply_hyprland_profile "$target"
+        ;;
+    *)
+        echo "Kullanım: power-mode [status|cycle|auto|set <power-saver|balanced|performance>|apply-session <profile>]" >&2
+        exit 1
+        ;;
+esac
+
+flock -u 9
+notify_waybar

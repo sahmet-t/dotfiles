@@ -1,0 +1,10 @@
+[Unit]
+Description=HP Omen AC/Battery Power & Hardware Optimization Sync
+After=power-profiles-daemon.service scx_loader.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/power-mode-sys auto
+
+[Install]
+WantedBy=multi-user.target

@@ -20,6 +20,7 @@
         "network",
         "bluetooth",
         "pulseaudio",
+        "custom/power-profile",
         "battery",
         "custom/notification",
         "custom/power"
@@ -96,6 +97,15 @@
         "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
     },
 
+    "custom/power-profile": {
+        "return-type": "json",
+        "exec": "~/.local/bin/power-mode status",
+        "interval": 5,
+        "signal": 9,
+        "on-click": "~/.local/bin/power-mode cycle",
+        "on-click-middle": "~/.local/bin/power-mode auto"
+    },
+
     "battery": {
         "states": {
             "warning": 25,
@@ -104,6 +114,7 @@
         "format": "{icon} {capacity}%",
         "format-charging": "󰂄 {capacity}%",
         "format-plugged": "󰚥 {capacity}%",
+        "tooltip-format": "{timeTo}\nAnlık tüketim: {power} W",
         "format-icons": ["󰂎", "󰁺", "󰁼", "󰁾", "󰂀", "󰂂", "󰁹"]
     },
 

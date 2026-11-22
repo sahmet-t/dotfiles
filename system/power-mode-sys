@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# /usr/local/bin/power-mode-sys — Root seviyesi donanım güç yöneticisi
+# Kullanım: power-mode-sys [auto|power-saver|balanced|performance]
+# ==============================================================================
+set -euo pipefail
+
+TARGET_USER="sahmet"
+TARGET_UID="1000"
+
+is_on_ac() {
+    local online
+    online=$(cat /sys/class/power_supply/ACAD/online 2>/dev/null || echo 1)
+    [[ "$online" == "1" ]]
+}
+
+write_sysfs() {
+    local path="$1" val="$2"
+    if [[ -w "$path" ]]; then
+        printf '%s' "$val" > "$path" 2>/dev/null || true
+    fi
+}
+
+set_wifi_powersave() {
+    local state="$1" iface
+    command -v iw >/dev/null 2>&1 || return 0
+    for wdir in /sys/class/net/*/wireless; do
+        [[ -d "$wdir" ]] || continue
+        iface=$(basename "$(dirname "$wdir")")
+        iw dev "$iface" set power_save "$state" 2>/dev/null || true
+    done
+}
+
+set_pci_runtime_pm() {
+    local mode="$1" dev cls
+    # Güvenli cihaz sınıfları: Ethernet (0x020000), Wi-Fi (0x028000), NVMe (0x010802), AMD CCP (0x108000)
+    for dev in /sys/bus/pci/devices/*; do
+        [[ -r "$dev/class" && -w "$dev/power/control" ]] || continue
+        cls=$(cat "$dev/class" 2>/dev/null || true)
+        case "$cls" in
+            0x020000|0x028000|0x010802|0x108000)
+                write_sysfs "$dev/power/control" "$mode"
+                ;;
+        esac
+    done
+}
+
+apply_hardware_profile() {
+    local prof="$1"
+
+    # 1. power-profiles-daemon (ACPI platform_profile + amd-pstate-epp + amdgpu ABM + scx_lavd --autopower)
+    if command -v powerprofilesctl >/dev/null 2>&1; then
+        powerprofilesctl set "$prof" 2>/dev/null || true
+    fi
+
+    if [[ "$prof" == "power-saver" ]]; then
+        # Pil / Maksimum Tasarruf & Sessizlik
+        write_sysfs /sys/devices/system/cpu/cpufreq/boost "0"
+        write_sysfs /sys/module/snd_hda_intel/parameters/power_save "1"
+        write_sysfs /sys/module/pcie_aspm/parameters/policy "powersupersave"
+        write_sysfs /proc/sys/vm/dirty_writeback_centisecs "1500"
+        set_pci_runtime_pm "auto"
+        set_wifi_powersave "on"
+    else
+        # Priz (balanced veya performance) — Maksimum Tepkisellik & Düşük Gecikme
+        write_sysfs /sys/devices/system/cpu/cpufreq/boost "1"
+        write_sysfs /sys/module/snd_hda_intel/parameters/power_save "0"
+        write_sysfs /sys/module/pcie_aspm/parameters/policy "default"
+        write_sysfs /proc/sys/vm/dirty_writeback_centisecs "500"
+        set_pci_runtime_pm "on"
+        set_wifi_powersave "off"
+    fi
+}
+
+notify_user_session() {
+    local prof="$1"
+    local runtime_dir="/run/user/${TARGET_UID}"
+    [[ -d "$runtime_dir/hypr" ]] || return 0
+
+    local sock sig
+    sock=$(ls -t "$runtime_dir"/hypr/*/.socket.sock 2>/dev/null | head -n 1 || true)
+    [[ -n "$sock" ]] || return 0
+    sig=$(basename "$(dirname "$sock")")
+
+    runuser -u "$TARGET_USER" -- env \
+        XDG_RUNTIME_DIR="$runtime_dir" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=${runtime_dir}/bus" \
+        HYPRLAND_INSTANCE_SIGNATURE="$sig" \
+        "/home/${TARGET_USER}/.local/bin/power-mode" apply-session "$prof" 2>/dev/null || true
+}
+
+cmd="${1:-auto}"
+
+case "$cmd" in
+    auto)
+        if is_on_ac; then
+            prof="balanced"
+        else
+            prof="power-saver"
+        fi
+        apply_hardware_profile "$prof"
+        notify_user_session "$prof"
+        ;;
+    power-saver|balanced|performance)
+        apply_hardware_profile "$cmd"
+        ;;
+    *)
+        echo "Kullanım: power-mode-sys [auto|power-saver|balanced|performance]" >&2
+        exit 1
+        ;;
+esac

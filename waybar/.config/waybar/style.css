@@ -45,6 +45,7 @@ window#waybar {
 #network,
 #bluetooth,
 #pulseaudio,
+#custom-power-profile,
 #battery,
 #custom-notification,
 #custom-power {
@@ -77,6 +78,23 @@ window#waybar {
 }
 
 #custom-power:hover {
+    color: @urgent;
+}
+
+#custom-power-profile {
+    font-size: 15px;
+    color: @fg_muted;
+}
+
+#custom-power-profile.saver {
+    color: @accent;
+}
+
+#custom-power-profile.balanced {
+    color: @fg;
+}
+
+#custom-power-profile.performance {
     color: @urgent;
 }
 
