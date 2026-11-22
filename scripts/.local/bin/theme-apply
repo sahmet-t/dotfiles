@@ -299,6 +299,88 @@ EOF
     printf '%s\n' "$gtk4_css" | write_clean "$HOME/.config/gtk-4.0/colors.css"
     apply_folder_icons "$ACCENT"
 
+    # 7. Pear Desktop (YouTube Music) özel CSS teması
+    write_clean "$HOME/.config/pear-desktop/theme.css" <<EOF
+/* Tema: ${THEME_NAME} — Pear Desktop (YouTube Music) */
+:root {
+    --my-bg: ${BG};
+    --my-bg-alt: ${BG_ALT};
+    --my-surface: ${SURFACE};
+    --my-fg: ${FG};
+    --my-fg-muted: ${FG_MUTED};
+    --my-accent: ${ACCENT};
+    --ytmusic-color-black1: var(--my-bg) !important;
+    --ytmusic-color-black2: var(--my-bg-alt) !important;
+    --ytmusic-color-black3: var(--my-surface) !important;
+    --ytmusic-color-black4: var(--my-bg) !important;
+    --ytmusic-color-blackpure: var(--my-bg) !important;
+    --ytmusic-color-grey1: var(--my-fg) !important;
+    --ytmusic-color-grey2: var(--my-fg-muted) !important;
+    --ytmusic-color-grey3: var(--my-fg-muted) !important;
+    --ytmusic-color-grey4: var(--my-surface) !important;
+    --ytmusic-color-grey5: var(--my-surface) !important;
+    --ytmusic-color-white1: var(--my-fg) !important;
+    --ytmusic-nav-bar: var(--my-bg-alt) !important;
+    --ytmusic-player-bar-background: var(--my-bg-alt) !important;
+    --ytmusic-general-background-a: var(--my-bg) !important;
+    --ytmusic-general-background-b: var(--my-bg-alt) !important;
+    --ytmusic-general-background-c: var(--my-surface) !important;
+    --ytmusic-search-background: var(--my-surface) !important;
+    --ytmusic-setting-item-toggle-active: var(--my-accent) !important;
+    --yt-spec-brand-background-primary: var(--my-bg-alt) !important;
+    --yt-spec-brand-background-solid: var(--my-bg) !important;
+    --yt-spec-general-background-a: var(--my-bg) !important;
+    --yt-spec-general-background-b: var(--my-bg-alt) !important;
+    --yt-spec-text-primary: var(--my-fg) !important;
+    --yt-spec-text-secondary: var(--my-fg-muted) !important;
+    --yt-spec-call-to-action: var(--my-accent) !important;
+    --yt-spec-themed-blue: var(--my-accent) !important;
+}
+
+html,
+body,
+ytmusic-app,
+ytmusic-app-layout,
+ytmusic-browse-response,
+ytmusic-search-page {
+    background-color: var(--my-bg) !important;
+    color: var(--my-fg) !important;
+}
+
+ytmusic-nav-bar,
+#nav-bar-background.ytmusic-app-layout,
+#mini-guide-background.ytmusic-app-layout,
+#guide-wrapper.ytmusic-app,
+ytmusic-guide-renderer,
+ytmusic-player-bar,
+#player-bar-background.ytmusic-app-layout,
+ytmusic-player-page {
+    background-color: var(--my-bg-alt) !important;
+}
+
+#progress-bar.ytmusic-player-bar {
+    --paper-slider-active-color: var(--my-accent) !important;
+    --paper-slider-knob-color: var(--my-accent) !important;
+    --paper-slider-knob-start-color: var(--my-accent) !important;
+    --paper-slider-knob-start-border-color: var(--my-accent) !important;
+    --paper-slider-secondary-color: var(--my-surface) !important;
+}
+
+#volume-slider.ytmusic-player-bar,
+#expand-volume-slider.ytmusic-player-bar {
+    --paper-slider-active-color: var(--my-accent) !important;
+    --paper-slider-knob-color: var(--my-accent) !important;
+}
+
+ytmusic-search-box .search-box.ytmusic-search-box,
+tp-yt-paper-listbox,
+ytmusic-menu-popup-renderer,
+ytmusic-multi-page-menu-renderer {
+    background-color: var(--my-surface) !important;
+    color: var(--my-fg) !important;
+}
+EOF
+
     # Tema klasöründe duvar kağıdı varsa uygula
     local wp
     wp=$(find -L "$theme_dir" -maxdepth 2 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | head -n 1 || true)
@@ -323,6 +405,7 @@ apply_wallpaper() {
     fi
 
     if command -v matugen >/dev/null 2>&1; then
+        mkdir -p "$HOME/.config/pear-desktop"
         matugen image "$img" --type scheme-fidelity --source-color-index 0 -m dark \
             || matugen image "$img" --type scheme-fidelity -m dark
     fi

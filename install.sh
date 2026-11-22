@@ -46,7 +46,7 @@ PACMAN_PKGS=(
 
     # Günlük GUI Araçları & Terminal
     ghostty btop nautilus gvfs gvfs-mtp gnome-keyring gsettings-desktop-schemas
-    loupe celluloid sushi 7zip gnome-calculator
+    loupe celluloid sushi 7zip gnome-calculator pear-desktop playerctl
     nm-connection-editor network-manager-applet
     adw-gtk-theme qt6ct qt6-wayland
 

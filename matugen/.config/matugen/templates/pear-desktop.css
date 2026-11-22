@@ -1,0 +1,78 @@
+/* Matugen tarafından otomatik üretildi — Pear Desktop (YouTube Music) */
+:root {
+    --my-bg: {{ colors.background.default.hex }};
+    --my-bg-alt: {{ colors.surface_container.default.hex }};
+    --my-surface: {{ colors.surface_container_high.default.hex }};
+    --my-fg: {{ colors.on_surface.default.hex }};
+    --my-fg-muted: {{ colors.on_surface_variant.default.hex }};
+    --my-accent: {{ colors.primary.default.hex }};
+    --ytmusic-color-black1: var(--my-bg) !important;
+    --ytmusic-color-black2: var(--my-bg-alt) !important;
+    --ytmusic-color-black3: var(--my-surface) !important;
+    --ytmusic-color-black4: var(--my-bg) !important;
+    --ytmusic-color-blackpure: var(--my-bg) !important;
+    --ytmusic-color-grey1: var(--my-fg) !important;
+    --ytmusic-color-grey2: var(--my-fg-muted) !important;
+    --ytmusic-color-grey3: var(--my-fg-muted) !important;
+    --ytmusic-color-grey4: var(--my-surface) !important;
+    --ytmusic-color-grey5: var(--my-surface) !important;
+    --ytmusic-color-white1: var(--my-fg) !important;
+    --ytmusic-nav-bar: var(--my-bg-alt) !important;
+    --ytmusic-player-bar-background: var(--my-bg-alt) !important;
+    --ytmusic-general-background-a: var(--my-bg) !important;
+    --ytmusic-general-background-b: var(--my-bg-alt) !important;
+    --ytmusic-general-background-c: var(--my-surface) !important;
+    --ytmusic-search-background: var(--my-surface) !important;
+    --ytmusic-setting-item-toggle-active: var(--my-accent) !important;
+    --yt-spec-brand-background-primary: var(--my-bg-alt) !important;
+    --yt-spec-brand-background-solid: var(--my-bg) !important;
+    --yt-spec-general-background-a: var(--my-bg) !important;
+    --yt-spec-general-background-b: var(--my-bg-alt) !important;
+    --yt-spec-text-primary: var(--my-fg) !important;
+    --yt-spec-text-secondary: var(--my-fg-muted) !important;
+    --yt-spec-call-to-action: var(--my-accent) !important;
+    --yt-spec-themed-blue: var(--my-accent) !important;
+}
+
+html,
+body,
+ytmusic-app,
+ytmusic-app-layout,
+ytmusic-browse-response,
+ytmusic-search-page {
+    background-color: var(--my-bg) !important;
+    color: var(--my-fg) !important;
+}
+
+ytmusic-nav-bar,
+#nav-bar-background.ytmusic-app-layout,
+#mini-guide-background.ytmusic-app-layout,
+#guide-wrapper.ytmusic-app,
+ytmusic-guide-renderer,
+ytmusic-player-bar,
+#player-bar-background.ytmusic-app-layout,
+ytmusic-player-page {
+    background-color: var(--my-bg-alt) !important;
+}
+
+#progress-bar.ytmusic-player-bar {
+    --paper-slider-active-color: var(--my-accent) !important;
+    --paper-slider-knob-color: var(--my-accent) !important;
+    --paper-slider-knob-start-color: var(--my-accent) !important;
+    --paper-slider-knob-start-border-color: var(--my-accent) !important;
+    --paper-slider-secondary-color: var(--my-surface) !important;
+}
+
+#volume-slider.ytmusic-player-bar,
+#expand-volume-slider.ytmusic-player-bar {
+    --paper-slider-active-color: var(--my-accent) !important;
+    --paper-slider-knob-color: var(--my-accent) !important;
+}
+
+ytmusic-search-box .search-box.ytmusic-search-box,
+tp-yt-paper-listbox,
+ytmusic-menu-popup-renderer,
+ytmusic-multi-page-menu-renderer {
+    background-color: var(--my-surface) !important;
+    color: var(--my-fg) !important;
+}

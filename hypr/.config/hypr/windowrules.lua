@@ -69,3 +69,10 @@ hl.window_rule({
     float = true,
     center = true,
 })
+
+-- Pear Desktop (YouTube Music) — Ghostty & Nautilus ile uyumlu buzlu cam saydamlığı
+hl.window_rule({
+    name = "pear-desktop-opacity",
+    match = { class = "^(com\\.github\\.th-ch\\.youtube-music|pear-desktop)$" },
+    opacity = "0.94 0.91",
+})
