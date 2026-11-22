@@ -52,3 +52,20 @@ hl.window_rule({
     match = { class = "^(org\\.gnome\\.Nautilus)$" },
     opacity = "0.94 0.91",
 })
+
+-- Hesap Makinesi (GNOME Calculator)
+hl.window_rule({
+    name = "float-calculator",
+    match = { class = "^(org\\.gnome\\.Calculator)$" },
+    float = true,
+    center = true,
+    size = { 420, 560 },
+})
+
+-- Nautilus Hızlı Önizleme (Sushi — Space tuşu)
+hl.window_rule({
+    name = "float-sushi",
+    match = { class = "^(org\\.gnome\\.NautilusPreviewer)$" },
+    float = true,
+    center = true,
+})

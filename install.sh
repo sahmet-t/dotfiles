@@ -46,6 +46,7 @@ PACMAN_PKGS=(
 
     # Günlük GUI Araçları & Terminal
     ghostty btop nautilus gvfs gvfs-mtp gnome-keyring gsettings-desktop-schemas
+    loupe celluloid sushi 7zip gnome-calculator
     nm-connection-editor network-manager-applet
     adw-gtk-theme qt6ct qt6-wayland
 
@@ -106,13 +107,21 @@ chmod +x "$DOTFILES_DIR/install.sh"
 cd "$DOTFILES_DIR"
 stow --restow --target="$HOME" hypr waybar rofi swaync ghostty btop gtk matugen themes scripts
 
-# GTK Koyu Tema & İmleç Varsayılanları
+# GTK Koyu Tema, İmleç & Varsayılan Terminal / MIME Eşleştirmeleri
 if command -v gsettings >/dev/null 2>&1; then
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || true
     gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark' || true
     gsettings set org.gnome.desktop.interface font-name 'Inter 10.5' || true
     gsettings set org.gnome.desktop.interface monospace-font-name 'JetBrainsMono Nerd Font 10.5' || true
     gsettings set org.gnome.desktop.interface cursor-theme 'Adwaita' || true
+    gsettings set org.gnome.desktop.default-applications.terminal exec 'ghostty' || true
+    gsettings set org.gnome.desktop.default-applications.terminal exec-arg '-e' || true
+fi
+
+if command -v xdg-mime >/dev/null 2>&1; then
+    xdg-mime default org.gnome.Loupe.desktop image/png image/jpeg image/webp image/gif image/bmp image/avif image/svg+xml || true
+    xdg-mime default io.github.celluloid_player.Celluloid.desktop video/mp4 video/x-matroska video/webm video/quicktime video/x-msvideo audio/mpeg audio/flac audio/ogg audio/wav audio/mp4 audio/x-opus+ogg || true
+    xdg-mime default zen.desktop application/pdf || true
 fi
 
 # Yerel Git Deposu & skip-worktree
