@@ -93,7 +93,7 @@ PICTURES_DIR="${PICTURES_DIR:-$HOME/Pictures}"
 mkdir -p "$BACKUP_DIR" "$HOME/.config" "$HOME/.local/bin" "$HOME/.local/share" \
          "$PICTURES_DIR/Wallpapers" "$PICTURES_DIR/Screenshots"
 
-for dir in hypr waybar rofi swaync ghostty btop matugen gtk-3.0 gtk-4.0; do
+for dir in hypr waybar rofi swaync ghostty btop paru matugen gtk-3.0 gtk-4.0; do
     if [[ -e "$HOME/.config/$dir" && ! -L "$HOME/.config/$dir" ]]; then
         mv "$HOME/.config/$dir" "$BACKUP_DIR/"
     fi
@@ -105,7 +105,7 @@ chmod +x "$DOTFILES_DIR/scripts/.local/bin/"*
 chmod +x "$DOTFILES_DIR/install.sh"
 
 cd "$DOTFILES_DIR"
-stow --restow --target="$HOME" hypr waybar rofi swaync ghostty btop micro gtk matugen themes scripts
+stow --restow --target="$HOME" hypr waybar rofi swaync ghostty btop micro paru gtk matugen themes scripts
 
 # GTK Koyu Tema, İmleç & Varsayılan Terminal / MIME Eşleştirmeleri
 if command -v gsettings >/dev/null 2>&1; then

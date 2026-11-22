@@ -32,10 +32,11 @@ udevadm control --reload-rules
 echo "[3/5] ananicy-cpp devre dışı bırakılıyor (scx_lavd ile çakışmayı önlemek için)..."
 systemctl disable --now ananicy-cpp.service 2>/dev/null || true
 
-echo "[4/5] power-profiles-daemon, scx_loader ve power-mode-sync etkinleştiriliyor..."
+echo "[4/5] power-profiles-daemon, scx_loader, power-mode-sync ve paccache.timer etkinleştiriliyor..."
 systemctl enable --now power-profiles-daemon.service
 systemctl enable --now scx_loader.service
 systemctl enable power-mode-sync.service
+systemctl enable --now paccache.timer 2>/dev/null || true
 
 # scx_loader.toml değiştiyse temiz yeniden başlat
 systemctl restart scx_loader.service

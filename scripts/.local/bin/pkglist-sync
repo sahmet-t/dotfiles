@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# pkglist-sync — Kurulu açık paket listelerini ~/.dotfiles/system/ içine kaydeder
+# Kullanım: pkglist-sync
+# ==============================================================================
+set -euo pipefail
+
+DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
+OUT_DIR="$DOTFILES_DIR/system"
+NATIVE_FILE="$OUT_DIR/pkglist-native.txt"
+AUR_FILE="$OUT_DIR/pkglist-aur.txt"
+
+mkdir -p "$OUT_DIR"
+
+# Resmi depolardan (CachyOS + Arch) açıkça kurulmuş paketler
+pacman -Qqen | LC_ALL=C sort > "$NATIVE_FILE"
+
+# AUR / harici kaynaklı açıkça kurulmuş paketler
+pacman -Qqem | LC_ALL=C sort > "$AUR_FILE"
+
+native_count="$(wc -l < "$NATIVE_FILE")"
+aur_count="$(wc -l < "$AUR_FILE")"
+
+echo "Paket listeleri güncellendi:"
+echo "  Resmi (pacman) : $native_count paket -> $NATIVE_FILE"
+echo "  AUR (paru)     : $aur_count paket -> $AUR_FILE"
+
+if git -C "$DOTFILES_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    changes="$(git -C "$DOTFILES_DIR" status --short -- "$NATIVE_FILE" "$AUR_FILE")"
+    if [[ -n "$changes" ]]; then
+        echo ""
+        echo "Git farkı (commit için hazır):"
+        echo "$changes"
+    else
+        echo "  Değişiklik yok (liste zaten güncel)."
+    fi
+fi
