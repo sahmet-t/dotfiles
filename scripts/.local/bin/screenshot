@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# screenshot — XDG uyumlu Bölge (Satty) ve Tam Ekran Ekran Görüntüsü
+# screenshot — XDG uyumlu Bölge (slurp + grim + Satty) ve Tam Ekran Görüntüsü
 # Kullanım: screenshot region | full
 # ==============================================================================
 set -euo pipefail
@@ -12,13 +12,21 @@ mkdir -p "$OUT_DIR"
 
 case "${1:-}" in
     region)
-        tmp=$(mktemp --suffix=.png)
-        trap 'rm -f "$tmp"' EXIT
-        hyprshot -m region --raw > "$tmp" || exit 0
-        [[ -s "$tmp" ]] || exit 0
-        satty --filename "$tmp" \
-              --output-filename "$OUT_DIR/$(date +'%Y-%m-%d_%H-%M-%S').png" \
-              --copy-command wl-copy
+        geom=$(slurp -d 2>/dev/null) || exit 0
+        [[ -n "$geom" ]] || exit 0
+
+        out_file="$OUT_DIR/$(date +'%Y-%m-%d_%H-%M-%S').png"
+        grim -g "$geom" "$out_file"
+        wl-copy --type image/png < "$out_file"
+        notify-send -i "$out_file" "Ekran Görüntüsü Alındı" "Panoya kopyalandı ve kaydedildi" || true
+
+        satty --filename "$out_file" \
+              --output-filename "$out_file" \
+              --copy-command "wl-copy --type image/png" \
+              --actions-on-enter save-to-clipboard,save-to-file,exit \
+              --actions-on-escape exit \
+              --save-after-copy \
+              --early-exit all
         ;;
     full)
         hyprshot -m output -m active -o "$OUT_DIR"

@@ -6,7 +6,7 @@ return {
     fg = "rgb({{ colors.on_surface.default.hex_stripped }})",
     fg_muted = "rgb({{ colors.on_surface_variant.default.hex_stripped }})",
     accent = "rgb({{ colors.primary.default.hex_stripped }})",
-    accent_alt = "rgb({{ colors.tertiary.default.hex_stripped }})",
+    accent_alt = "rgb({{ colors.secondary.default.hex_stripped }})",
     urgent = "rgb({{ colors.error.default.hex_stripped }})",
     border_inactive = "rgba({{ colors.outline_variant.default.hex_stripped }}aa)",
 }

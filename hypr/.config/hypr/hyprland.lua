@@ -29,7 +29,6 @@ hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
-hl.env("GDK_BACKEND", "wayland,x11,*")
 hl.env("SDL_VIDEODRIVER", "wayland,x11")
 hl.env("CLUTTER_BACKEND", "wayland")
 hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
@@ -111,6 +110,10 @@ hl.config({
         background_color = colors.bg,
         focus_on_activate = true,
         vrr = 2,
+    },
+
+    cursor = {
+        inactive_timeout = 3,
     },
 
     debug = {

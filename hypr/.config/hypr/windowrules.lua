@@ -45,3 +45,10 @@ hl.window_rule({
     float = true,
     center = true,
 })
+
+-- Nautilus (Dosya Yöneticisi) — Ghostty ile uyumlu hafif buzlu cam saydamlığı
+hl.window_rule({
+    name = "nautilus-opacity",
+    match = { class = "^(org\\.gnome\\.Nautilus)$" },
+    opacity = "0.94 0.91",
+})

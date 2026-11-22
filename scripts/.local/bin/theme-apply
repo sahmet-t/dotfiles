@@ -24,11 +24,105 @@ write_clean() {
     cat > "$target"
 }
 
+apply_folder_icons() {
+    local accent_hex="${1:-}"
+    local src_dir="/usr/share/icons/Adwaita/scalable/places"
+    local theme_root="$HOME/.local/share/icons/MyTheme-Adwaita"
+    local dst_dir="$theme_root/scalable/places"
+
+    [[ -d "$src_dir" ]] || return 0
+    [[ "$accent_hex" =~ ^#?[0-9a-fA-F]{6}$ ]] || return 0
+    command -v python3 >/dev/null 2>&1 || return 0
+
+    mkdir -p "$dst_dir"
+
+    cat > "$theme_root/index.theme" <<'EOF'
+[Icon Theme]
+Name=MyTheme-Adwaita
+Comment=Aktif temayla otomatik renklendirilen Adwaita klasör ikonları
+Inherits=Adwaita,hicolor
+Directories=scalable/places
+
+[scalable/places]
+Context=Places
+Size=128
+MinSize=16
+MaxSize=512
+Type=Scalable
+EOF
+
+    python3 - "$accent_hex" "$src_dir" "$dst_dir" <<'PY'
+import colorsys, glob, os, sys
+
+hex_in = sys.argv[1].lstrip("#")
+src_dir, dst_dir = sys.argv[2], sys.argv[3]
+
+r = int(hex_in[0:2], 16) / 255.0
+g = int(hex_in[2:4], 16) / 255.0
+b = int(hex_in[4:6], 16) / 255.0
+h, l, s = colorsys.rgb_to_hls(r, g, b)
+
+# Klasör yüzeyi ne aşırı parlak ne fazla karanlık olsun; siyah-beyaz temada gri kalsın
+body_l = max(0.50, min(0.70, l))
+body_s = min(s, 0.72)
+
+def to_hex(hv, lv, sv):
+    rr, gg, bb = colorsys.hls_to_rgb(hv, max(0.0, min(1.0, lv)), max(0.0, min(1.0, sv)))
+    return "#{:02x}{:02x}{:02x}".format(round(rr * 255), round(gg * 255), round(bb * 255))
+
+mapping = {
+    "#438de6": to_hex(h, body_l * 0.58, min(1.0, body_s * 1.05)),  # arka sekme & klasör simgesi
+    "#62a0ea": to_hex(h, body_l * 0.78, min(1.0, body_s * 1.05)),  # alt kenar gölgesi
+    "#a4caee": to_hex(h, body_l,        body_s),                   # ana ön gövde
+    "#afd4ff": to_hex(h, min(0.88, body_l * 1.15), body_s * 0.90), # sol üst parlama
+    "#c0d5ea": to_hex(h, min(0.90, body_l * 1.18), body_s * 0.65), # sağ kenar yansıma
+}
+
+targets = (
+    glob.glob(os.path.join(src_dir, "folder*.svg"))
+    + [os.path.join(src_dir, n) for n in ("user-bookmarks.svg", "user-desktop.svg", "user-home.svg")]
+)
+
+for src in targets:
+    if not os.path.isfile(src):
+        continue
+    with open(src, "r", encoding="utf-8") as f:
+        svg = f.read()
+    for old, new in mapping.items():
+        svg = svg.replace(old, new)
+    with open(os.path.join(dst_dir, os.path.basename(src)), "w", encoding="utf-8") as f:
+        f.write(svg)
+
+inode_link = os.path.join(dst_dir, "inode-directory.svg")
+if os.path.lexists(inode_link):
+    os.remove(inode_link)
+os.symlink("folder.svg", inode_link)
+PY
+
+    if command -v gtk4-update-icon-cache >/dev/null 2>&1; then
+        gtk4-update-icon-cache -f -t -q "$theme_root" >/dev/null 2>&1 || true
+    elif command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache -f -t -q "$theme_root" >/dev/null 2>&1 || true
+    fi
+
+    if command -v gsettings >/dev/null 2>&1; then
+        # Açık GTK4/Nautilus pencerelerinin klasör rengini anında yenilemesi için ikon temasını tetikle
+        gsettings set org.gnome.desktop.interface icon-theme 'Adwaita' >/dev/null 2>&1 || true
+        gsettings set org.gnome.desktop.interface icon-theme 'MyTheme-Adwaita' >/dev/null 2>&1 || true
+    fi
+}
+
 reload_apps() {
     hyprctl reload >/dev/null 2>&1 || true
     pkill -SIGUSR2 waybar >/dev/null 2>&1 || true
     swaync-client -rs >/dev/null 2>&1 || true
     pkill -SIGUSR2 ghostty >/dev/null 2>&1 || true
+    # Nautilus penceresiz arka plan servisi olarak kalmışsa yeni CSS'i alması için temizle
+    if pgrep -x nautilus >/dev/null 2>&1; then
+        if ! hyprctl clients 2>/dev/null | grep -qi "org\.gnome\.Nautilus"; then
+            nautilus -q >/dev/null 2>&1 || true
+        fi
+    fi
 }
 
 apply_preset() {
@@ -203,6 +297,7 @@ EOF
 )
     printf '%s\n' "$gtk3_css" | write_clean "$HOME/.config/gtk-3.0/colors.css"
     printf '%s\n' "$gtk4_css" | write_clean "$HOME/.config/gtk-4.0/colors.css"
+    apply_folder_icons "$ACCENT"
 
     # Tema klasöründe duvar kağıdı varsa uygula
     local wp
@@ -231,6 +326,12 @@ apply_wallpaper() {
         matugen image "$img" --type scheme-fidelity --source-color-index 0 -m dark \
             || matugen image "$img" --type scheme-fidelity -m dark
     fi
+
+    local accent_hex=""
+    if [[ -f "$HOME/.config/waybar/colors.css" ]]; then
+        accent_hex=$(grep -oE '@define-color accent #[0-9a-fA-F]{6}' "$HOME/.config/waybar/colors.css" | awk '{print $3}' | head -n 1 || true)
+    fi
+    [[ -n "$accent_hex" ]] && apply_folder_icons "$accent_hex"
 
     echo "wallpaper:$img" > "$STATE_DIR/current"
     reload_apps
