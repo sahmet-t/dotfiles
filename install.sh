@@ -105,7 +105,7 @@ chmod +x "$DOTFILES_DIR/scripts/.local/bin/"*
 chmod +x "$DOTFILES_DIR/install.sh"
 
 cd "$DOTFILES_DIR"
-stow --restow --target="$HOME" hypr waybar rofi swaync ghostty btop gtk matugen themes scripts
+stow --restow --target="$HOME" hypr waybar rofi swaync ghostty btop micro gtk matugen themes scripts
 
 # GTK Koyu Tema, İmleç & Varsayılan Terminal / MIME Eşleştirmeleri
 if command -v gsettings >/dev/null 2>&1; then

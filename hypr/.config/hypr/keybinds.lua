@@ -9,6 +9,8 @@ hl.bind(mod .. " + Return", hl.dsp.exec_cmd("ghostty"))
 hl.bind(mod .. " + Space", hl.dsp.exec_cmd("rofi -show drun"))
 hl.bind(mod .. " + E", hl.dsp.exec_cmd("nautilus"))
 hl.bind(mod .. " + W", hl.dsp.exec_cmd("zen-browser"))
+hl.bind(mod .. " + C", hl.dsp.exec_cmd("gnome-calculator"))
+hl.bind("XF86Calculator", hl.dsp.exec_cmd("gnome-calculator"))
 
 -- Tema, Duvar Kağıdı, Font & Odak Modu
 hl.bind(mod .. " + SHIFT + T", hl.dsp.exec_cmd("~/.local/bin/theme-menu"))

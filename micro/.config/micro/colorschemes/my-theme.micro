@@ -1,0 +1,43 @@
+# Ghostty aktif terminal paletini (ANSI 16) ve saydamlığını otomatik devralan tema
+color-link default "default,default"
+color-link comment "italic brightblack"
+
+color-link identifier "blue"
+color-link identifier.class "cyan"
+color-link identifier.var "default"
+
+color-link constant "yellow"
+color-link constant.number "yellow"
+color-link constant.string "cyan"
+
+color-link symbol "magenta"
+color-link symbol.brackets "brightblack"
+color-link symbol.tag "green"
+
+color-link type "cyan"
+color-link type.keyword "bold green"
+
+color-link special "magenta"
+color-link statement "bold green"
+color-link preproc "magenta"
+
+color-link underlined "underline cyan"
+color-link error "bold red"
+color-link todo "bold yellow"
+
+color-link diff-added "green"
+color-link diff-modified "yellow"
+color-link diff-deleted "red"
+
+color-link gutter-error "red"
+color-link gutter-warning "yellow"
+
+color-link statusline "white,black"
+color-link tabbar "white,black"
+color-link indent-char "brightblack"
+color-link line-number "brightblack"
+color-link current-line-number "bold green"
+
+color-link cursor-line "black"
+color-link color-column "black"
+color-link type.extended "default"
