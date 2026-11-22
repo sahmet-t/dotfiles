@@ -39,13 +39,13 @@ PACMAN_PKGS=(
     sddm
 
     # Hyprland & Masaüstü Bileşenleri
-    hyprland waybar rofi swaync awww hyprlock hypridle
+    hyprland waybar rofi swaync awww hyprlock hypridle hyprsunset
     hyprshot satty cliphist wl-clipboard brightnessctl
     polkit-gnome xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
     libnotify xdg-user-dirs pipewire-pulse wireplumber bluez bluez-utils
 
     # Günlük GUI Araçları & Terminal
-    ghostty nautilus gvfs gvfs-mtp gnome-keyring gsettings-desktop-schemas
+    ghostty btop nautilus gvfs gvfs-mtp gnome-keyring gsettings-desktop-schemas
     nm-connection-editor network-manager-applet
     adw-gtk-theme qt6ct qt6-wayland
 
@@ -54,6 +54,7 @@ PACMAN_PKGS=(
 
     # Tema Motoru & Fontlar
     matugen ttf-jetbrains-mono-nerd inter-font noto-fonts noto-fonts-emoji
+    ttf-ibm-plex ttf-fira-sans otf-geist-mono-nerd ttf-cascadia-code-nerd ttf-iosevkaterm-nerd
 )
 sudo pacman -Syu --needed "${PACMAN_PKGS[@]}"
 
@@ -91,7 +92,7 @@ PICTURES_DIR="${PICTURES_DIR:-$HOME/Pictures}"
 mkdir -p "$BACKUP_DIR" "$HOME/.config" "$HOME/.local/bin" "$HOME/.local/share" \
          "$PICTURES_DIR/Wallpapers" "$PICTURES_DIR/Screenshots"
 
-for dir in hypr waybar rofi swaync ghostty matugen gtk-3.0 gtk-4.0; do
+for dir in hypr waybar rofi swaync ghostty btop matugen gtk-3.0 gtk-4.0; do
     if [[ -e "$HOME/.config/$dir" && ! -L "$HOME/.config/$dir" ]]; then
         mv "$HOME/.config/$dir" "$BACKUP_DIR/"
     fi
@@ -103,7 +104,7 @@ chmod +x "$DOTFILES_DIR/scripts/.local/bin/"*
 chmod +x "$DOTFILES_DIR/install.sh"
 
 cd "$DOTFILES_DIR"
-stow --restow --target="$HOME" hypr waybar rofi swaync ghostty gtk matugen themes scripts
+stow --restow --target="$HOME" hypr waybar rofi swaync ghostty btop gtk matugen themes scripts
 
 # GTK Koyu Tema & İmleç Varsayılanları
 if command -v gsettings >/dev/null 2>&1; then
@@ -147,9 +148,9 @@ if ! command -v paru >/dev/null 2>&1; then
 fi
 
 if command -v paru >/dev/null 2>&1; then
-    echo ">>> Hazır binary paketler kuruluyor: zen-browser-bin, overskride-bin..."
-    paru -S --needed --skipreview zen-browser-bin overskride-bin \
-        || echo "UYARI: zen-browser-bin / overskride-bin kurulamadı; masaüstü açılınca elle kurabilirsin."
+    echo ">>> Hazır binary paketler kuruluyor: zen-browser-bin, overskride-bin, maplemono-nf..."
+    paru -S --needed --skipreview zen-browser-bin overskride-bin maplemono-nf \
+        || echo "UYARI: zen-browser-bin / overskride-bin / maplemono-nf kurulamadı; masaüstü açılınca elle kurabilirsin."
 
     echo ""
     echo "================================================================"

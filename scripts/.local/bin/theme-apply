@@ -150,9 +150,9 @@ palette = 14=${TERM_6}
 palette = 15=${TERM_15}
 EOF
 
-    # 6. GTK3 & GTK4 (Nautilus, pwvucontrol, Overskride)
-    local gtk_css
-    gtk_css=$(cat <<EOF
+    # 6. GTK3 & GTK4 / Libadwaita 1.6–1.10+ (Nautilus, pwvucontrol, Overskride)
+    local gtk3_css gtk4_css
+    gtk3_css=$(cat <<EOF
 /* Tema: ${THEME_NAME} */
 @define-color accent_color ${ACCENT};
 @define-color accent_bg_color ${ACCENT};
@@ -163,6 +163,7 @@ EOF
 @define-color view_fg_color ${FG};
 @define-color headerbar_bg_color ${BG};
 @define-color headerbar_fg_color ${FG};
+@define-color headerbar_backdrop_color ${BG};
 @define-color card_bg_color ${BG_ALT};
 @define-color card_fg_color ${FG};
 @define-color popover_bg_color ${BG_ALT};
@@ -171,10 +172,37 @@ EOF
 @define-color dialog_fg_color ${FG};
 @define-color sidebar_bg_color ${SIDEBAR};
 @define-color sidebar_fg_color ${FG};
+@define-color sidebar_backdrop_color ${SIDEBAR};
 EOF
 )
-    printf '%s\n' "$gtk_css" | write_clean "$HOME/.config/gtk-3.0/colors.css"
-    printf '%s\n' "$gtk_css" | write_clean "$HOME/.config/gtk-4.0/colors.css"
+    gtk4_css=$(cat <<EOF
+${gtk3_css}
+
+:root {
+    --accent-color: ${ACCENT};
+    --accent-bg-color: ${ACCENT};
+    --accent-fg-color: ${ACCENT_FG};
+    --window-bg-color: ${BG};
+    --window-fg-color: ${FG};
+    --view-bg-color: ${BG_ALT};
+    --view-fg-color: ${FG};
+    --headerbar-bg-color: ${BG};
+    --headerbar-fg-color: ${FG};
+    --headerbar-backdrop-color: ${BG};
+    --card-bg-color: ${BG_ALT};
+    --card-fg-color: ${FG};
+    --popover-bg-color: ${BG_ALT};
+    --popover-fg-color: ${FG};
+    --dialog-bg-color: ${BG};
+    --dialog-fg-color: ${FG};
+    --sidebar-bg-color: ${SIDEBAR};
+    --sidebar-fg-color: ${FG};
+    --sidebar-backdrop-color: ${SIDEBAR};
+}
+EOF
+)
+    printf '%s\n' "$gtk3_css" | write_clean "$HOME/.config/gtk-3.0/colors.css"
+    printf '%s\n' "$gtk4_css" | write_clean "$HOME/.config/gtk-4.0/colors.css"
 
     # Tema klasöründe duvar kağıdı varsa uygula
     local wp
@@ -200,7 +228,8 @@ apply_wallpaper() {
     fi
 
     if command -v matugen >/dev/null 2>&1; then
-        matugen image "$img" --source-color-index 0 -m dark || matugen image "$img" -m dark
+        matugen image "$img" --type scheme-fidelity --source-color-index 0 -m dark \
+            || matugen image "$img" --type scheme-fidelity -m dark
     fi
 
     echo "wallpaper:$img" > "$STATE_DIR/current"
