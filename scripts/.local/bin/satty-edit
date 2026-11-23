@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# satty-edit — Mevcut görselleri, panodaki görseli veya yeni seçimi Satty ile aç
+# Kullanım: satty-edit [dosya_yolu]
+# ==============================================================================
+set -euo pipefail
+
+PICTURES_DIR="$(xdg-user-dir PICTURES 2>/dev/null || true)"
+PICTURES_DIR="${PICTURES_DIR:-$HOME/Pictures}"
+OUT_DIR="$PICTURES_DIR/Screenshots"
+mkdir -p "$OUT_DIR"
+
+if [[ $# -gt 0 && -n "${1:-}" ]]; then
+    file="$1"
+    exec satty \
+        --filename "$file" \
+        --output-filename "$file" \
+        --resize smart \
+        --copy-command "wl-copy --type image/png" \
+        --actions-on-enter save-to-clipboard,exit \
+        --actions-on-escape exit
+fi
+
+# Dosya verilmeden (ör. Rofi'den) açıldıysa: panoda görsel varsa onu düzenle, yoksa bölge seç
+clip_types="$(wl-paste --list-types 2>/dev/null || true)"
+if grep -qx 'image/png' <<< "$clip_types"; then
+    wl-paste --type image/png | exec satty \
+        --filename - \
+        --output-filename "$OUT_DIR/satty-%Y-%m-%d_%H-%M-%S.png" \
+        --resize smart \
+        --copy-command "wl-copy --type image/png" \
+        --actions-on-enter save-to-clipboard,exit \
+        --actions-on-escape exit
+elif grep -qx 'image/jpeg' <<< "$clip_types"; then
+    wl-paste --type image/jpeg | exec satty \
+        --filename - \
+        --output-filename "$OUT_DIR/satty-%Y-%m-%d_%H-%M-%S.png" \
+        --resize smart \
+        --copy-command "wl-copy --type image/png" \
+        --actions-on-enter save-to-clipboard,exit \
+        --actions-on-escape exit
+else
+    exec "$HOME/.local/bin/screenshot" region
+fi

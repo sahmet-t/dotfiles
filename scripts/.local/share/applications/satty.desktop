@@ -1,0 +1,15 @@
+[Desktop Entry]
+Name=Satty
+GenericName=Görsel İşaretleme ve Sansür
+Comment=Görseller üzerinde çizim, ok, metin ve bulanıklaştırma aracı
+TryExec=satty
+Exec=/bin/sh -c "exec \\"\\$HOME/.local/bin/satty-edit\\" \\"\\$@\\"" _ %f
+Terminal=false
+NoDisplay=false
+Type=Application
+Keywords=wayland;snapshot;annotation;editing;blur;draw;cizim;sansur;
+Icon=satty
+Categories=Graphics;2DGraphics;RasterGraphics;
+StartupNotify=true
+MimeType=image/png;image/jpeg;image/webp;image/bmp;image/gif;
+StartupWMClass=com.gabm.satty

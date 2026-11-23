@@ -90,7 +90,7 @@ xdg-user-dirs-update >/dev/null 2>&1 || true
 PICTURES_DIR="$(xdg-user-dir PICTURES 2>/dev/null || true)"
 PICTURES_DIR="${PICTURES_DIR:-$HOME/Pictures}"
 
-mkdir -p "$BACKUP_DIR" "$HOME/.config" "$HOME/.local/bin" "$HOME/.local/share" \
+mkdir -p "$BACKUP_DIR" "$HOME/.config" "$HOME/.local/bin" "$HOME/.local/share/applications" \
          "$PICTURES_DIR/Wallpapers" "$PICTURES_DIR/Screenshots"
 
 for dir in hypr waybar rofi swaync ghostty btop paru matugen gtk-3.0 gtk-4.0; do
@@ -126,7 +126,7 @@ fi
 
 # Yerel Git Deposu & skip-worktree
 if [[ ! -d "$DOTFILES_DIR/.git" ]]; then
-    git init
+    git init -b main
     git add .
     git -c user.name="Local User" -c user.email="user@localhost" commit -m "Initial CachyOS + Hyprland dotfiles (Faz 1)" || true
 fi
