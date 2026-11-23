@@ -2,3 +2,14 @@
 gtk/.config/gtk-3.0/bookmarks
 gtk/.config/gtk-3.0/settings.ini
 gtk/.config/gtk-4.0/settings.ini
+
+# Yerel gizli değişkenler, geçici editör ve yedek dosyaları
+.env
+.env.*
+*.bak
+*.orig
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

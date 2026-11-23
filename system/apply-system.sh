@@ -11,20 +11,38 @@ if [[ "$EUID" -ne 0 ]]; then
 fi
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-TARGET_USER="${SUDO_USER:-sahmet}"
+TARGET_USER="${1:-${SUDO_USER:-}}"
 
-echo "[1/6] Güç & sched-ext sistem dosyaları kuruluyor..."
+if [[ -z "$TARGET_USER" || "$TARGET_USER" == "root" ]]; then
+    echo "Hedef kullanıcı belirlenemedi. Örnek kullanım: sudo $0 [kullanici_adi]" >&2
+    exit 1
+fi
+
+if ! TARGET_UID="$(id -u "$TARGET_USER" 2>/dev/null)"; then
+    echo "Kullanıcı bulunamadı: $TARGET_USER" >&2
+    exit 1
+fi
+
+echo "[1/6] Güç & sched-ext sistem dosyaları kuruluyor (kullanıcı: ${TARGET_USER}, uid: ${TARGET_UID})..."
 install -Dm644 "$SCRIPT_DIR/scx_loader.toml" /etc/scx_loader.toml
-install -Dm755 "$SCRIPT_DIR/power-mode-sys" /usr/local/bin/power-mode-sys
+
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "$tmp_dir"' EXIT
+
+sed -e "s|@TARGET_USER@|${TARGET_USER}|g" \
+    -e "s|@TARGET_UID@|${TARGET_UID}|g" \
+    "$SCRIPT_DIR/power-mode-sys" > "$tmp_dir/power-mode-sys"
+install -Dm755 "$tmp_dir/power-mode-sys" /usr/local/bin/power-mode-sys
+
 install -Dm644 "$SCRIPT_DIR/99-power-mode.rules" /etc/udev/rules.d/99-power-mode.rules
 install -Dm644 "$SCRIPT_DIR/power-mode-sync.service" /etc/systemd/system/power-mode-sync.service
 
 # sudoers dosyasını önce geçici konumda visudo ile doğrula
-tmp_sudoers="$(mktemp)"
-trap 'rm -f "$tmp_sudoers"' EXIT
-install -m440 "$SCRIPT_DIR/sudoers-power-mode" "$tmp_sudoers"
-visudo -cf "$tmp_sudoers"
-install -Dm440 -o root -g root "$tmp_sudoers" /etc/sudoers.d/power-mode
+sed -e "s|@TARGET_USER@|${TARGET_USER}|g" \
+    "$SCRIPT_DIR/sudoers-power-mode" > "$tmp_dir/sudoers-power-mode"
+chmod 440 "$tmp_dir/sudoers-power-mode"
+visudo -cf "$tmp_dir/sudoers-power-mode"
+install -Dm440 -o root -g root "$tmp_dir/sudoers-power-mode" /etc/sudoers.d/power-mode
 
 echo "[2/6] SDDM teması (hypr-minimal) kuruluyor..."
 if [[ -d "$SCRIPT_DIR/sddm/themes/hypr-minimal" ]]; then

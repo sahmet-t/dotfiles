@@ -5,8 +5,9 @@
 # ==============================================================================
 set -euo pipefail
 
-TARGET_USER="sahmet"
-TARGET_UID="1000"
+# Not: @TARGET_USER@ ve @TARGET_UID@ yer tutucuları apply-system.sh kurulumunda doldurulur.
+TARGET_USER="@TARGET_USER@"
+TARGET_UID="@TARGET_UID@"
 
 is_on_ac() {
     local online
@@ -82,11 +83,15 @@ notify_user_session() {
     [[ -n "$sock" ]] || return 0
     sig=$(basename "$(dirname "$sock")")
 
+    local target_home
+    target_home="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+    [[ -n "$target_home" && -x "${target_home}/.local/bin/power-mode" ]] || return 0
+
     runuser -u "$TARGET_USER" -- env \
         XDG_RUNTIME_DIR="$runtime_dir" \
         DBUS_SESSION_BUS_ADDRESS="unix:path=${runtime_dir}/bus" \
         HYPRLAND_INSTANCE_SIGNATURE="$sig" \
-        "/home/${TARGET_USER}/.local/bin/power-mode" apply-session "$prof" 2>/dev/null || true
+        "${target_home}/.local/bin/power-mode" apply-session "$prof" 2>/dev/null || true
 }
 
 cmd="${1:-auto}"

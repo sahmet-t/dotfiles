@@ -1,2 +1,3 @@
 # Waybar / kullanıcı oturumunun şifresiz olarak yalnızca sabit profillerle power-mode-sys çağırabilmesi için
-sahmet ALL=(root) NOPASSWD: /usr/local/bin/power-mode-sys power-saver, /usr/local/bin/power-mode-sys balanced, /usr/local/bin/power-mode-sys performance, /usr/local/bin/power-mode-sys auto
+# Not: @TARGET_USER@ yer tutucusu apply-system.sh kurulumunda aktif kullanıcı adıyla doldurulur.
+@TARGET_USER@ ALL=(root) NOPASSWD: /usr/local/bin/power-mode-sys power-saver, /usr/local/bin/power-mode-sys balanced, /usr/local/bin/power-mode-sys performance, /usr/local/bin/power-mode-sys auto
