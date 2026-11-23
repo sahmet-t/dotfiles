@@ -389,6 +389,13 @@ EOF
     fi
 
     echo "preset:$name" > "$STATE_DIR/current"
+    if [[ -x "$HOME/.local/bin/sddm-theme-sync" ]]; then
+        if [[ -n "$wp" ]]; then
+            "$HOME/.local/bin/sddm-theme-sync" --wallpaper "$wp" || true
+        else
+            "$HOME/.local/bin/sddm-theme-sync" || true
+        fi
+    fi
     reload_apps
     notify-send "Tema Uygulandı" "${THEME_NAME}" || true
 }
@@ -417,6 +424,9 @@ apply_wallpaper() {
     [[ -n "$accent_hex" ]] && apply_folder_icons "$accent_hex"
 
     echo "wallpaper:$img" > "$STATE_DIR/current"
+    if [[ -x "$HOME/.local/bin/sddm-theme-sync" ]]; then
+        "$HOME/.local/bin/sddm-theme-sync" --wallpaper "$img" || true
+    fi
     reload_apps
     notify-send "Dinamik Tema Uygulandı" "$(basename "$img")" || true
 }

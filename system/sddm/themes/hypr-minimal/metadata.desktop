@@ -1,0 +1,11 @@
+[SddmGreeterTheme]
+Name=Hypr Minimal
+Description=Hyprlock ve masaustu temasiyla tam uyumlu minimal Qt6 SDDM giris ekrani
+Author=sahmet
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=hypr-minimal
+Theme-API=2.0
+QtVersion=6

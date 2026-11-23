@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# sddm-theme-sync — Aktif Masaüstü Teması, Fontu ve Duvar Kağıdını SDDM'e Aktarır
+# Kullanım:
+#   sddm-theme-sync
+#   sddm-theme-sync --wallpaper /yol/gorsel.jpg
+# ==============================================================================
+set -euo pipefail
+
+SDDM_STATE_DIR="/var/lib/sddm-hypr-theme"
+WAYBAR_COLORS="$HOME/.config/waybar/colors.css"
+WAYBAR_FONT="$HOME/.config/waybar/font.css"
+FONT_STATE="$HOME/.local/state/my-theme/fonts.env"
+THEME_STATE="$HOME/.local/state/my-theme/current"
+THEMES_DIR="$HOME/.local/share/my-themes"
+
+# Sistem kurulumu (apply-system.sh) henüz yapılmadıysa sessizce çık
+if [[ ! -d "$SDDM_STATE_DIR" || ! -w "$SDDM_STATE_DIR" ]]; then
+    exit 0
+fi
+
+WALLPAPER_ARG=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --wallpaper)
+            WALLPAPER_ARG="${2:-}"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+read_color() {
+    local name="$1" fallback="$2" val=""
+    if [[ -f "$WAYBAR_COLORS" ]]; then
+        val=$(grep -E "^@define-color[[:space:]]+${name}[[:space:]]+#[0-9a-fA-F]{6}" "$WAYBAR_COLORS" \
+            | awk '{print $3}' | tr -d ';' | head -n 1 || true)
+    fi
+    if [[ "$val" =~ ^#[0-9a-fA-F]{6}$ ]]; then
+        printf '%s' "$val"
+    else
+        printf '%s' "$fallback"
+    fi
+}
+
+read_ui_font() {
+    local font=""
+    if [[ -f "$FONT_STATE" ]]; then
+        font=$(grep -E '^UI_FONT=' "$FONT_STATE" | head -n 1 | cut -d= -f2- | tr -d '"' || true)
+    fi
+    if [[ -z "$font" && -f "$WAYBAR_FONT" ]]; then
+        font=$(grep -E 'font-family:' "$WAYBAR_FONT" | head -n 1 | sed -E 's/.*font-family:[[:space:]]*"([^"]+)".*/\1/' || true)
+    fi
+    printf '%s' "${font:-Inter}"
+}
+
+detect_current_wallpaper() {
+    local wp=""
+    # 1. awww aktif duvar kağıdı (canlı Hyprland oturumu)
+    if command -v awww >/dev/null 2>&1; then
+        wp=$(awww query 2>/dev/null | sed -nE 's/.*image:[[:space:]]*(.+)$/\1/p' | head -n 1 || true)
+        if [[ -n "$wp" && -f "$wp" ]]; then
+            printf '%s' "$wp"
+            return 0
+        fi
+    fi
+    # 2. theme-apply durum dosyası
+    if [[ -f "$THEME_STATE" ]]; then
+        local state
+        state=$(cat "$THEME_STATE" 2>/dev/null || true)
+        if [[ "$state" == wallpaper:* ]]; then
+            wp="${state#wallpaper:}"
+            [[ -f "$wp" ]] && { printf '%s' "$wp"; return 0; }
+        elif [[ "$state" == preset:* ]]; then
+            local preset="${state#preset:}"
+            if [[ -d "$THEMES_DIR/$preset" ]]; then
+                wp=$(find -L "$THEMES_DIR/$preset" -maxdepth 2 -type f \
+                    \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
+                    | head -n 1 || true)
+                [[ -n "$wp" && -f "$wp" ]] && { printf '%s' "$wp"; return 0; }
+            fi
+        fi
+    fi
+    return 0
+}
+
+sync_wallpaper() {
+    local src="$1"
+    [[ -n "$src" && -f "$src" ]] || return 0
+
+    local ext="${src##*.}"
+    ext="${ext,,}"
+    local tmp_bg="" target_bg=""
+
+    case "$ext" in
+        jpg|jpeg)
+            target_bg="$SDDM_STATE_DIR/background.jpg"
+            tmp_bg=$(mktemp "$SDDM_STATE_DIR/.bg.XXXXXX.jpg")
+            cp -f "$src" "$tmp_bg"
+            chmod 644 "$tmp_bg"
+            mv -f "$tmp_bg" "$target_bg"
+            rm -f "$SDDM_STATE_DIR/background.png"
+            ;;
+        png)
+            target_bg="$SDDM_STATE_DIR/background.png"
+            tmp_bg=$(mktemp "$SDDM_STATE_DIR/.bg.XXXXXX.png")
+            cp -f "$src" "$tmp_bg"
+            chmod 644 "$tmp_bg"
+            mv -f "$tmp_bg" "$target_bg"
+            rm -f "$SDDM_STATE_DIR/background.jpg"
+            ;;
+        *)
+            # Qt6'da webp eklentisi olmadığı için ffmpeg ile kayıpsıza yakın JPEG'e çevir
+            if command -v ffmpeg >/dev/null 2>&1; then
+                target_bg="$SDDM_STATE_DIR/background.jpg"
+                tmp_bg=$(mktemp "$SDDM_STATE_DIR/.bg.XXXXXX.jpg")
+                if ffmpeg -y -loglevel error -i "$src" -frames:v 1 -q:v 2 "$tmp_bg" 2>/dev/null; then
+                    chmod 644 "$tmp_bg"
+                    mv -f "$tmp_bg" "$target_bg"
+                    rm -f "$SDDM_STATE_DIR/background.png"
+                else
+                    rm -f "$tmp_bg"
+                fi
+            fi
+            ;;
+    esac
+}
+
+# Duvar kağıdı: parametre geldiyse onu al; gelmediyse ve SDDM'de henüz görsel yoksa canlı oturumdan yakala
+if [[ -n "$WALLPAPER_ARG" ]]; then
+    sync_wallpaper "$WALLPAPER_ARG"
+elif [[ ! -f "$SDDM_STATE_DIR/background.jpg" && ! -f "$SDDM_STATE_DIR/background.png" ]]; then
+    detected_wp="$(detect_current_wallpaper)"
+    [[ -n "$detected_wp" ]] && sync_wallpaper "$detected_wp"
+fi
+
+BG_FILE=""
+if [[ -f "$SDDM_STATE_DIR/background.jpg" ]]; then
+    BG_FILE="$SDDM_STATE_DIR/background.jpg"
+elif [[ -f "$SDDM_STATE_DIR/background.png" ]]; then
+    BG_FILE="$SDDM_STATE_DIR/background.png"
+fi
+
+BG=$(read_color bg "#14130f")
+BG_ALT=$(read_color bg_alt "#20201b")
+SURFACE=$(read_color surface "#2b2a25")
+FG=$(read_color fg "#e6e2db")
+FG_MUTED=$(read_color fg_muted "#cac7b7")
+ACCENT=$(read_color accent "#cdc98a")
+ACCENT_ALT=$(read_color accent_alt "#cbc8a9")
+URGENT=$(read_color urgent "#ffb4ab")
+UI_FONT=$(read_ui_font)
+
+tmp_conf=$(mktemp "$SDDM_STATE_DIR/.theme.conf.XXXXXX")
+trap 'rm -f "$tmp_conf"' EXIT
+cat > "$tmp_conf" <<EOF
+[General]
+background=${BG_FILE}
+bg=${BG}
+bg_alt=${BG_ALT}
+surface=${SURFACE}
+fg=${FG}
+fg_muted=${FG_MUTED}
+accent=${ACCENT}
+accent_alt=${ACCENT_ALT}
+urgent=${URGENT}
+font=${UI_FONT}
+EOF
+chmod 644 "$tmp_conf"
+mv -f "$tmp_conf" "$SDDM_STATE_DIR/theme.conf.user"

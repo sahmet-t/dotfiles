@@ -85,6 +85,10 @@ if command -v gsettings >/dev/null 2>&1; then
     gsettings set org.gnome.desktop.interface monospace-font-name "${MONO_FONT} 10.5" >/dev/null 2>&1 || true
 fi
 
+if [[ -x "$HOME/.local/bin/sddm-theme-sync" ]]; then
+    "$HOME/.local/bin/sddm-theme-sync" || true
+fi
+
 pkill -SIGUSR2 waybar >/dev/null 2>&1 || true
 swaync-client -rs >/dev/null 2>&1 || true
 pkill -SIGUSR2 ghostty >/dev/null 2>&1 || true
