@@ -1,5 +1,7 @@
 # dotfiles
 
+![CachyOS + Hyprland masaüstü](assets/desktop.webp)
+
 CachyOS (`No Desktop`) için Hyprland 0.57+ (Lua) yapılandırması. Kullanıcı ayarları GNU Stow ile yönetilir; güç profilleri, `sched-ext` ve SDDM giriş ekranı `system/` altındaki kurucu ile uygulanır.
 
 ## Bileşenler
@@ -59,6 +61,7 @@ sudo ~/.dotfiles/system/apply-system.sh
 
 ```text
 .
+├── assets/             # README önizleme görselleri
 ├── btop/               # Ghostty TTY renklerini devralan btop yapılandırması
 ├── ghostty/            # Terminal ayarları, tema ve font kancaları
 ├── gtk/                # GTK3 ve GTK4/Libadwaita renk tanımları
