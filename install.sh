@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# CachyOS (No Desktop) + Hyprland AI-Assisted DIY Kurulum Scripti (Faz 1)
+# CachyOS (No Desktop) + Hyprland Dotfiles Kurulum Scripti
 # ==============================================================================
 set -euo pipefail
 
@@ -14,7 +14,7 @@ DOTFILES_DIR="$HOME/.dotfiles"
 BACKUP_DIR="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
 
 echo "================================================================"
-echo "  CachyOS + Hyprland Kişisel Çalışma Ortamı Kurulumu (Faz 1)"
+echo "  CachyOS + Hyprland Dotfiles Kurulumu"
 echo "================================================================"
 
 # 0. Kurulum öncesi güvenlik snapshot'ı (Snapper mevcutsa)
@@ -128,7 +128,7 @@ fi
 if [[ ! -d "$DOTFILES_DIR/.git" ]]; then
     git init -b main
     git add .
-    git -c user.name="Local User" -c user.email="user@localhost" commit -m "Initial CachyOS + Hyprland dotfiles (Faz 1)" || true
+    git -c user.name="Dotfiles User" -c user.email="user@localhost" commit -m "feat: initial CachyOS and Hyprland dotfiles" || true
 fi
 
 # Üretilen renk/font dosyalarının tema değişikliklerinde git status'ü kirletmesini önle
