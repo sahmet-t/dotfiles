@@ -93,13 +93,26 @@ notify_waybar() {
 switch_hypridle() {
     local target_cfg="$1"
     [[ -f "$target_cfg" ]] || return 0
-    if pgrep -af "hypridle" | grep -Fq -- "$target_cfg"; then
+    if pgrep -ax hypridle | grep -Fq -- "$target_cfg"; then
         return 0
     fi
     pkill -x hypridle >/dev/null 2>&1 || true
-    sleep 0.1
-    nohup hypridle -c "$target_cfg" >/dev/null 2>&1 &
-    disown || true
+    for _ in 1 2 3 4 5; do
+        pgrep -x hypridle >/dev/null 2>&1 || break
+        sleep 0.1
+    done
+    # Hyprland'ın kendi ortamı ve cgroup'u içinde başlat:
+    # udev -> power-mode-sync.service (Type=oneshot) bitince systemd tarafından öldürülmez
+    # ve WAYLAND_DISPLAY / DBUS ortam değişkenlerini Hyprland'dan doğrudan devralır.
+    if command -v hyprctl >/dev/null 2>&1 && [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        hyprctl eval "hl.exec_cmd('hypridle -c ${target_cfg}')" >/dev/null 2>&1 && return 0
+    fi
+    if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+        local w_sock
+        w_sock=$(find "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" -maxdepth 1 -type s -name 'wayland-[0-9]*' ! -name 'wayland-*-*' 2>/dev/null | head -n 1 || true)
+        [[ -n "$w_sock" ]] && export WAYLAND_DISPLAY="$(basename "$w_sock")"
+    fi
+    setsid -f hypridle -c "$target_cfg" </dev/null >/dev/null 2>&1 || true
 }
 
 apply_hyprland_profile() {

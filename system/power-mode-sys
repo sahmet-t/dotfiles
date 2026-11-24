@@ -87,10 +87,15 @@ notify_user_session() {
     target_home="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
     [[ -n "$target_home" && -x "${target_home}/.local/bin/power-mode" ]] || return 0
 
+    local w_sock w_disp=""
+    w_sock=$(find "$runtime_dir" -maxdepth 1 -type s -name 'wayland-[0-9]*' ! -name 'wayland-*-*' 2>/dev/null | head -n 1 || true)
+    [[ -n "$w_sock" ]] && w_disp="$(basename "$w_sock")"
+
     runuser -u "$TARGET_USER" -- env \
         XDG_RUNTIME_DIR="$runtime_dir" \
         DBUS_SESSION_BUS_ADDRESS="unix:path=${runtime_dir}/bus" \
         HYPRLAND_INSTANCE_SIGNATURE="$sig" \
+        WAYLAND_DISPLAY="$w_disp" \
         "${target_home}/.local/bin/power-mode" apply-session "$prof" 2>/dev/null || true
 }
 
