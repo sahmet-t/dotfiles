@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# srt-utf8 — Türkçe altyazı dosyalarını (UTF-8 BOM / Windows-1254 / ISO-8859-9 /
+#            UTF-16) Stremio uyumlu, BOM'suz temiz UTF-8 formatına dönüştürür.
+# Kullanım: srt-utf8 [--notify] <dosya_veya_klasör...>
+# ==============================================================================
+set -euo pipefail
+
+NOTIFY=0
+if [[ "${1:-}" == "--notify" ]]; then
+    NOTIFY=1
+    shift
+fi
+
+if [[ $# -eq 0 ]]; then
+    echo "Kullanım: srt-utf8 [--notify] <dosya_veya_klasör...>" >&2
+    exit 1
+fi
+
+converted=0
+already_utf8=0
+failed=0
+skipped=0
+
+# Dosya başındaki BOM baytlarını oku (ilk 3 bayt, hex)
+read_bom() {
+    od -An -tx1 -N3 "$1" 2>/dev/null | tr -d ' \n' || true
+}
+
+convert_file() {
+    local file="$1"
+    [[ -f "$file" && -s "$file" ]] || { ((skipped++)) || true; return 0; }
+
+    local bom src_enc="" has_utf8_bom=0
+    bom="$(read_bom "$file")"
+
+    case "$bom" in
+        fffe*)   src_enc="UTF-16LE" ;;
+        feff*)   src_enc="UTF-16BE" ;;
+        efbbbf*) has_utf8_bom=1 ;;
+    esac
+
+    if [[ -z "$src_enc" ]]; then
+        # Geçerli UTF-8 mi kontrol et
+        if iconv -f UTF-8 -t UTF-8 "$file" >/dev/null 2>&1; then
+            if [[ "$has_utf8_bom" -eq 0 ]]; then
+                ((already_utf8++)) || true
+                echo "Zaten temiz UTF-8: $file"
+                return 0
+            fi
+            # UTF-8 ama BOM var (Stremio "invalid file" hatasına yol açar)
+            src_enc="UTF-8-BOM"
+        else
+            # Türkçe altyazıların (Windows ANSI / ISO-8859-9) standart üst kümesi
+            src_enc="WINDOWS-1254"
+        fi
+    fi
+
+    local dir base tmp ok=0
+    dir="$(dirname "$file")"
+    base="$(basename "$file")"
+    tmp="$(mktemp "$dir/.${base}.utf8.XXXXXX")"
+
+    if [[ "$src_enc" == "UTF-8-BOM" ]]; then
+        # İlk 3 BOM baytını (EF BB BF) güvenle kaldır
+        if tail -c +4 "$file" > "$tmp" 2>/dev/null; then
+            ok=1
+        fi
+    else
+        if iconv -f "$src_enc" -t UTF-8 "$file" > "$tmp" 2>/dev/null \
+            || iconv -f "$src_enc" -t UTF-8//IGNORE "$file" > "$tmp" 2>/dev/null; then
+            # Dönüşüm sonrası başta BOM (EF BB BF) kaldıysa temizle
+            if [[ "$(read_bom "$tmp")" == efbbbf* ]]; then
+                local tmp2
+                tmp2="$(mktemp "$dir/.${base}.nobom.XXXXXX")"
+                if tail -c +4 "$tmp" > "$tmp2" 2>/dev/null; then
+                    mv -f "$tmp2" "$tmp"
+                else
+                    rm -f "$tmp2"
+                fi
+            fi
+            ok=1
+        fi
+    fi
+
+    if [[ "$ok" -eq 1 && -s "$tmp" ]]; then
+        chmod --reference="$file" "$tmp" 2>/dev/null || true
+        mv -f "$tmp" "$file"
+        ((converted++)) || true
+        echo "Dönüştürüldü ($src_enc -> UTF-8): $file"
+        return 0
+    fi
+
+    rm -f "$tmp"
+    ((failed++)) || true
+    echo "Başarısız: $file" >&2
+    return 0
+}
+
+for target in "$@"; do
+    if [[ -d "$target" ]]; then
+        while IFS= read -r -d '' subfile; do
+            convert_file "$subfile"
+        done < <(find "$target" -type f \( -iname '*.srt' -o -iname '*.sub' -o -iname '*.ass' -o -iname '*.ssa' -o -iname '*.vtt' \) -print0)
+    elif [[ -f "$target" ]]; then
+        convert_file "$target"
+    else
+        ((skipped++)) || true
+    fi
+done
+
+if [[ "$NOTIFY" -eq 1 ]] && command -v notify-send >/dev/null 2>&1; then
+    parts=()
+    (( converted > 0 ))    && parts+=("${converted} dosya UTF-8'e çevrildi")
+    (( already_utf8 > 0 )) && parts+=("${already_utf8} dosya zaten temiz UTF-8")
+    (( failed > 0 ))       && parts+=("${failed} dosya çevrilemedi")
+
+    if [[ ${#parts[@]} -eq 0 ]]; then
+        msg="İşlenecek uygun altyazı dosyası bulunamadı."
+    else
+        msg="$(IFS=', '; echo "${parts[*]}")."
+    fi
+
+    if (( failed > 0 )); then
+        notify-send -u normal -i dialog-warning "Altyazı UTF-8 Dönüşümü" "$msg" || true
+    else
+        notify-send -u low -i accessories-text-editor "Altyazı UTF-8 Dönüşümü" "$msg" || true
+    fi
+fi
+
+(( failed == 0 ))

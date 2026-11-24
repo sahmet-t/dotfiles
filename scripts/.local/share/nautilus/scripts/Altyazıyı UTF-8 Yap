@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Nautilus sağ tık menüsü: Seçili altyazı dosyalarını/klasörlerini UTF-8 yapar.
+set -euo pipefail
+
+FILES=()
+if [[ -n "${NAUTILUS_SCRIPT_SELECTED_FILE_PATHS:-}" ]]; then
+    while IFS= read -r path; do
+        [[ -n "$path" ]] && FILES+=("$path")
+    done <<< "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS"
+elif [[ $# -gt 0 ]]; then
+    FILES=("$@")
+fi
+
+[[ ${#FILES[@]} -gt 0 ]] || exit 0
+
+exec "$HOME/.local/bin/srt-utf8" --notify "${FILES[@]}"

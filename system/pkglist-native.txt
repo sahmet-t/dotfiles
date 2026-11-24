@@ -157,6 +157,7 @@ pwvucontrol
 python
 python-defusedxml
 python-packaging
+qt5-wayland
 qt6-wayland
 qt6ct
 realtime-privileges

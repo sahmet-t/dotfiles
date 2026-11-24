@@ -102,6 +102,7 @@ done
 # Ventoy (exFAT) USB'den kopyalanınca tüm dosyalar 755 gelebilir; izinleri temizle
 find "$DOTFILES_DIR" -not -path "$DOTFILES_DIR/.git/*" -type f -exec chmod 644 {} +
 chmod +x "$DOTFILES_DIR/scripts/.local/bin/"*
+chmod +x "$DOTFILES_DIR/scripts/.local/share/nautilus/scripts/"* 2>/dev/null || true
 chmod +x "$DOTFILES_DIR/install.sh"
 
 cd "$DOTFILES_DIR"
