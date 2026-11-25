@@ -2,35 +2,76 @@
 # ==============================================================================
 # srt-utf8 — Türkçe altyazı dosyalarını (UTF-8 BOM / Windows-1254 / ISO-8859-9 /
 #            UTF-16) Stremio uyumlu, BOM'suz temiz UTF-8 formatına dönüştürür.
-# Kullanım: srt-utf8 [--notify] <dosya_veya_klasör...>
+#            --stremio ile yol/ad içindeki özel ve Türkçe karakterleri temizleyip
+#            saf ASCII ~/Altyazilar klasörüne taşır ve Nautilus'ta açar.
+# Kullanım: srt-utf8 [--stremio] [--notify] <dosya_veya_klasör...>
 # ==============================================================================
 set -euo pipefail
 
+STREMIO_MODE=0
 NOTIFY=0
-if [[ "${1:-}" == "--notify" ]]; then
-    NOTIFY=1
-    shift
-fi
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --stremio) STREMIO_MODE=1; shift ;;
+        --notify)  NOTIFY=1; shift ;;
+        --)        shift; break ;;
+        -*)        echo "Bilinmeyen seçenek: $1" >&2; exit 1 ;;
+        *)         break ;;
+    esac
+done
 
 if [[ $# -eq 0 ]]; then
-    echo "Kullanım: srt-utf8 [--notify] <dosya_veya_klasör...>" >&2
+    echo "Kullanım: srt-utf8 [--stremio] [--notify] <dosya_veya_klasör...>" >&2
     exit 1
 fi
 
+STREMIO_ROOT="${SRT_UTF8_DIR:-$HOME/Altyazilar}"
+DOWNLOADS_DIR="$(xdg-user-dir DOWNLOAD 2>/dev/null || echo "$HOME/Downloads")"
+
 converted=0
-already_utf8=0
+moved=0
+already_ok=0
 failed=0
 skipped=0
+open_dir=""
 
 # Dosya başındaki BOM baytlarını oku (ilk 3 bayt, hex)
 read_bom() {
     od -An -tx1 -N3 "$1" 2>/dev/null | tr -d ' \n' || true
 }
 
-convert_file() {
-    local file="$1"
-    [[ -f "$file" && -s "$file" ]] || { ((skipped++)) || true; return 0; }
+# Stremio 4.4 /subtitles.vtt URL kodlaması için yalnızca güvenli ASCII karakterler
+is_stremio_safe_path() {
+    LC_ALL=C test -z "$(printf '%s' "$1" | tr -d 'A-Za-z0-9/._-')"
+}
 
+sanitize_name() {
+    local raw="$1"
+    local clean
+    clean="$(printf '%s' "$raw" \
+        | sed -e 's/ç/c/g; s/Ç/C/g; s/ğ/g/g; s/Ğ/G/g; s/ı/i/g; s/İ/I/g; s/ö/o/g; s/Ö/O/g; s/ş/s/g; s/Ş/S/g; s/ü/u/g; s/Ü/U/g' \
+        | LC_ALL=C tr -c 'A-Za-z0-9._-' '_' \
+        | sed -E 's/_+/_/g; s/\._/./g; s/_\././g; s/_-/-/g; s/-_/-/g; s/\.+/\./g; s/-+/-/g; s/^[._-]+//; s/[._-]+$//')"
+    printf '%s' "${clean:-altyazi}"
+}
+
+sanitize_filename() {
+    local base="$1"
+    local stem ext
+    if [[ "$base" == *.* ]]; then
+        ext="${base##*.}"
+        stem="${base%.*}"
+        ext="$(printf '%s' "$ext" | LC_ALL=C tr 'A-Z' 'a-z' | LC_ALL=C tr -cd 'a-z0-9')"
+        printf '%s.%s' "$(sanitize_name "$stem")" "${ext:-srt}"
+    else
+        sanitize_name "$base"
+    fi
+}
+
+# Dosyanın kodlamasını yerinde BOM'suz temiz UTF-8 yap; değiştiyse 0, zaten temizse 2, hataysa 1 döner
+fix_encoding_in_place() {
+    local file="$1"
     local bom src_enc="" has_utf8_bom=0
     bom="$(read_bom "$file")"
 
@@ -41,17 +82,12 @@ convert_file() {
     esac
 
     if [[ -z "$src_enc" ]]; then
-        # Geçerli UTF-8 mi kontrol et
         if iconv -f UTF-8 -t UTF-8 "$file" >/dev/null 2>&1; then
             if [[ "$has_utf8_bom" -eq 0 ]]; then
-                ((already_utf8++)) || true
-                echo "Zaten temiz UTF-8: $file"
-                return 0
+                return 2
             fi
-            # UTF-8 ama BOM var (Stremio "invalid file" hatasına yol açar)
             src_enc="UTF-8-BOM"
         else
-            # Türkçe altyazıların (Windows ANSI / ISO-8859-9) standart üst kümesi
             src_enc="WINDOWS-1254"
         fi
     fi
@@ -62,14 +98,12 @@ convert_file() {
     tmp="$(mktemp "$dir/.${base}.utf8.XXXXXX")"
 
     if [[ "$src_enc" == "UTF-8-BOM" ]]; then
-        # İlk 3 BOM baytını (EF BB BF) güvenle kaldır
         if tail -c +4 "$file" > "$tmp" 2>/dev/null; then
             ok=1
         fi
     else
         if iconv -f "$src_enc" -t UTF-8 "$file" > "$tmp" 2>/dev/null \
             || iconv -f "$src_enc" -t UTF-8//IGNORE "$file" > "$tmp" 2>/dev/null; then
-            # Dönüşüm sonrası başta BOM (EF BB BF) kaldıysa temizle
             if [[ "$(read_bom "$tmp")" == efbbbf* ]]; then
                 local tmp2
                 tmp2="$(mktemp "$dir/.${base}.nobom.XXXXXX")"
@@ -86,34 +120,111 @@ convert_file() {
     if [[ "$ok" -eq 1 && -s "$tmp" ]]; then
         chmod --reference="$file" "$tmp" 2>/dev/null || true
         mv -f "$tmp" "$file"
-        ((converted++)) || true
         echo "Dönüştürüldü ($src_enc -> UTF-8): $file"
         return 0
     fi
 
     rm -f "$tmp"
-    ((failed++)) || true
-    echo "Başarısız: $file" >&2
-    return 0
+    return 1
+}
+
+process_file() {
+    local file="$1"
+    local forced_dest_dir="${2:-}"
+    [[ -f "$file" && -s "$file" ]] || { ((skipped++)) || true; return 0; }
+
+    local rc=0
+    fix_encoding_in_place "$file" || rc=$?
+    if [[ "$rc" -eq 1 ]]; then
+        ((failed++)) || true
+        echo "Başarısız: $file" >&2
+        return 0
+    fi
+
+    local did_convert=0 did_move=0
+    [[ "$rc" -eq 0 ]] && did_convert=1
+
+    if [[ "$STREMIO_MODE" -eq 1 ]]; then
+        local abs_file
+        abs_file="$(realpath "$file" 2>/dev/null || echo "$file")"
+
+        if [[ -n "$forced_dest_dir" ]] || ! is_stremio_safe_path "$abs_file"; then
+            local dest_dir="$forced_dest_dir"
+            if [[ -z "$dest_dir" ]]; then
+                local parent parent_name
+                parent="$(dirname "$abs_file")"
+                if [[ "$parent" != "$HOME" && "$parent" != "$DOWNLOADS_DIR" && "$parent" != "$STREMIO_ROOT" ]]; then
+                    parent_name="$(sanitize_name "$(basename "$parent")")"
+                    dest_dir="$STREMIO_ROOT/$parent_name"
+                else
+                    dest_dir="$STREMIO_ROOT"
+                fi
+            fi
+
+            local clean_base dest_file
+            clean_base="$(sanitize_filename "$(basename "$abs_file")")"
+            mkdir -p "$dest_dir"
+            dest_file="$dest_dir/$clean_base"
+
+            if [[ ! "$abs_file" -ef "$dest_file" ]]; then
+                mv -f "$abs_file" "$dest_file"
+                did_move=1
+                open_dir="$dest_dir"
+                echo "Stremio uyumlu konuma taşındı: $dest_file"
+            fi
+        fi
+    fi
+
+    if (( did_convert == 1 )); then
+        ((converted++)) || true
+    fi
+    if (( did_move == 1 )); then
+        ((moved++)) || true
+    fi
+    if (( did_convert == 0 && did_move == 0 )); then
+        ((already_ok++)) || true
+        echo "Zaten hazır: $file"
+    fi
 }
 
 for target in "$@"; do
     if [[ -d "$target" ]]; then
+        abs_dir="$(realpath "$target" 2>/dev/null || echo "$target")"
+        dest_sub=""
+        if [[ "$STREMIO_MODE" -eq 1 ]]; then
+            if [[ "$abs_dir" == "$STREMIO_ROOT"/* ]] && is_stremio_safe_path "$abs_dir"; then
+                dest_sub="$abs_dir"
+            else
+                dest_sub="$STREMIO_ROOT/$(sanitize_name "$(basename "$abs_dir")")"
+            fi
+        fi
+
         while IFS= read -r -d '' subfile; do
-            convert_file "$subfile"
-        done < <(find "$target" -type f \( -iname '*.srt' -o -iname '*.sub' -o -iname '*.ass' -o -iname '*.ssa' -o -iname '*.vtt' \) -print0)
+            process_file "$subfile" "$dest_sub"
+        done < <(find "$abs_dir" -type f \( -iname '*.srt' -o -iname '*.sub' -o -iname '*.ass' -o -iname '*.ssa' -o -iname '*.vtt' \) -print0)
+
+        # Kaynak klasör tamamen boşaldıysa temizle (başka dosyalar varsa dokunma)
+        if [[ "$STREMIO_MODE" -eq 1 && -n "$dest_sub" && "$abs_dir" != "$dest_sub" ]]; then
+            rmdir "$abs_dir" 2>/dev/null || true
+        fi
     elif [[ -f "$target" ]]; then
-        convert_file "$target"
+        process_file "$target" ""
     else
         ((skipped++)) || true
     fi
 done
 
+# Taşıma yapıldıysa hazır klasörü Nautilus'ta otomatik aç
+if [[ "$STREMIO_MODE" -eq 1 && "$NOTIFY" -eq 1 && -n "$open_dir" && -d "$open_dir" ]] && command -v nautilus >/dev/null 2>&1; then
+    setsid -f nautilus "$open_dir" </dev/null >/dev/null 2>&1 || true
+fi
+
 if [[ "$NOTIFY" -eq 1 ]] && command -v notify-send >/dev/null 2>&1; then
     parts=()
-    (( converted > 0 ))    && parts+=("${converted} dosya UTF-8'e çevrildi")
-    (( already_utf8 > 0 )) && parts+=("${already_utf8} dosya zaten temiz UTF-8")
-    (( failed > 0 ))       && parts+=("${failed} dosya çevrilemedi")
+    (( converted > 0 ))  && parts+=("${converted} dosya UTF-8'e çevrildi")
+    (( moved > 0 ))      && parts+=("${moved} dosya ~/Altyazilar içine hazırlandı")
+    (( already_ok > 0 )) && parts+=("${already_ok} dosya zaten hazırdı")
+    (( failed > 0 ))     && parts+=("${failed} dosya işlenemedi")
 
     if [[ ${#parts[@]} -eq 0 ]]; then
         msg="İşlenecek uygun altyazı dosyası bulunamadı."
@@ -122,9 +233,9 @@ if [[ "$NOTIFY" -eq 1 ]] && command -v notify-send >/dev/null 2>&1; then
     fi
 
     if (( failed > 0 )); then
-        notify-send -u normal -i dialog-warning "Altyazı UTF-8 Dönüşümü" "$msg" || true
+        notify-send -u normal -i dialog-warning "Altyazı Stremio Hazırlığı" "$msg" || true
     else
-        notify-send -u low -i accessories-text-editor "Altyazı UTF-8 Dönüşümü" "$msg" || true
+        notify-send -u low -i accessories-text-editor "Altyazı Stremio Hazırlığı" "$msg" || true
     fi
 fi
 

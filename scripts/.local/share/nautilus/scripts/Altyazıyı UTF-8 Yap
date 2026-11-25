@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Nautilus sağ tık menüsü: Seçili altyazı dosyalarını/klasörlerini UTF-8 yapar.
+# Nautilus sağ tık menüsü: Seçili altyazı dosyalarını/klasörlerini BOM'suz UTF-8 yapıp
+# Stremio uyumlu saf ASCII yol/ad ile ~/Altyazilar klasörüne hazırlar.
 set -euo pipefail
 
 FILES=()
@@ -13,4 +14,4 @@ fi
 
 [[ ${#FILES[@]} -gt 0 ]] || exit 0
 
-exec "$HOME/.local/bin/srt-utf8" --notify "${FILES[@]}"
+exec "$HOME/.local/bin/srt-utf8" --stremio --notify "${FILES[@]}"
