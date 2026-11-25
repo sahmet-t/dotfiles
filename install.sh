@@ -93,7 +93,7 @@ PICTURES_DIR="${PICTURES_DIR:-$HOME/Pictures}"
 mkdir -p "$BACKUP_DIR" "$HOME/.config" "$HOME/.local/bin" "$HOME/.local/share/applications" \
          "$PICTURES_DIR/Wallpapers" "$PICTURES_DIR/Screenshots"
 
-for dir in hypr waybar rofi swaync ghostty btop paru matugen gtk-3.0 gtk-4.0; do
+for dir in hypr waybar rofi swaync ghostty btop micro paru matugen gtk-3.0 gtk-4.0; do
     if [[ -e "$HOME/.config/$dir" && ! -L "$HOME/.config/$dir" ]]; then
         mv "$HOME/.config/$dir" "$BACKUP_DIR/"
     fi

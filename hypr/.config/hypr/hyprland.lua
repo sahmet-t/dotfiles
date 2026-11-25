@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Hyprland Ana Yapılandırma (0.57+ Lua) — CachyOS AI-Assisted DIY
+-- Hyprland Configuration (0.57+ Lua)
 -- ==============================================================================
 
 if package and package.loaded then
