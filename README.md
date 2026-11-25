@@ -1,8 +1,12 @@
 # dotfiles
 
-![CachyOS + Hyprland desktop](assets/desktop.webp)
+![Monochrome desktop](assets/desktop.webp)
 
-*`FantasqueSansM Nerd Font` · `Noto Sans` · `adw-gtk3-dark` · Matugen 4.2 (`scheme-fidelity`)*
+| | |
+| :---: | :---: |
+| ![Indigo desktop](assets/desktop-2.webp) | ![Olive desktop](assets/desktop-3.webp) |
+
+*Matugen 4.2 (`scheme-fidelity`) · `adw-gtk3-dark` · Wallpapers: [1](https://wallhaven.cc/w/6dyjd7) · [2](https://github.com/dharmx/walls/blob/main/digital/a_night_sky_with_clouds_and_a_street_light.png) · [3](https://github.com/dharmx/walls/blob/main/dreamcore/a_house_in_a_field_with_trees.jpg)*
 
 Hyprland 0.57+ (Lua) desktop configuration on **CachyOS (`No Desktop`)**. User configs are organized as **GNU Stow** packages (one directory per app); optional system-level power automation, `sched-ext`, and the custom Qt6 SDDM theme live under [`system/`](system/).
 
